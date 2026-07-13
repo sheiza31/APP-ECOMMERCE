@@ -3,10 +3,14 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Button from "../components/Button";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+
     return (
         <>
             <html lang="en">
-                <body className="bg-background text-on-background font-body-md min-h-screen">
+                <head>
+                    <title>Lumina | Dashboard Product</title>
+                </head>
+                <body className="">
                     <AsideBar />
                     <div className="ml-64 min-h-screen flex flex-col">
                         <Header />
@@ -18,6 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     <Button />
                 </body>
             </html>
+
         </>
     );
 }

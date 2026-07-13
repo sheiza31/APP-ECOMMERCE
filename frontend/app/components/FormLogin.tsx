@@ -1,7 +1,7 @@
 "use client"
     import { useLoginContext } from "../context/LoginContext"
     import { Eye, EyeClosed } from 'lucide-react'
-    import { useState } from "react"
+    import { useEffect, useState } from "react"
     import { useRouter } from "next/navigation"
     import Link from "next/link"
     import Image from "next/image"
@@ -11,10 +11,13 @@
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const router = useRouter()
+    const [token, setToken] = useState("");
+    useEffect(()=>{
+            setToken(localStorage.getItem("token") || "");
+        },[])
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError("");
-        const token = localStorage.getItem("token");
         const response = await fetch("http://localhost:8080/api/v1/auth/login", {
             method: "POST",
             headers: {
@@ -26,9 +29,21 @@
         const json = await response.json();
         
         if (response.ok && json.data) {
-            if (json.data.role === "admin") {
+            const userToken = json.data.token;
+            const userRole = json.data.role;
+
+            // Simpan ke localStorage (untuk API calls)
+            localStorage.setItem("token", userToken);
+            localStorage.setItem("role", userRole);
+
+            // Simpan ke cookie agar Next.js middleware bisa baca (max 1 hari)
+            const maxAge = 60 * 60 * 24;
+            document.cookie = `token=${userToken}; path=/; max-age=${maxAge}; SameSite=Lax`;
+            document.cookie = `role=${userRole}; path=/; max-age=${maxAge}; SameSite=Lax`;
+
+            if (userRole === "admin") {
                 router.push("/dashboard")
-            } else if (json.data.role == "user") {
+            } else if (userRole === "user") {
                 router.push("/shop")
             }
         } else {

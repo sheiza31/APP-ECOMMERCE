@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, Heart, Package } from "lucide-react"
 import { useFilter } from "../context/FilterContext"
+import { useCart } from "../../../context/CartContext"
 
 interface ProductVariant {
     id: number
@@ -53,10 +54,25 @@ const COLOR_HEX: Record<string, string> = {
 
 const Product = () => {
     const { selectedColors, selectedCategoryIDs, sortOrder } = useFilter()
+    const { addToCart } = useCart()
     const [products, setProducts] = useState<Product[]>([])
     const [loading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+
+    const handleAddToCart = (product: Product) => {
+        const image = getProductImage(product)
+        const colors = getProductColors(product)
+        addToCart({
+            id: product.ID,
+            name: product.name,
+            price: product.price,
+            image: image,
+            quantity: 1,
+            color: colors.length > 0 ? colors[0] : undefined
+        })
+        // Optional: show a small toast or visual feedback here
+    }
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -85,7 +101,8 @@ const Product = () => {
                     headers: { "Authorization": `Bearer ${token}` },
                 })
                 const data = await res.json()
-                let fetched: Product[] = data.data ?? []
+                // Pastikan selalu array meskipun backend return null/object
+                let fetched: Product[] = Array.isArray(data.data) ? data.data : []
 
                 // Client-side: filter additional selected colors (if > 1 color selected)
                 if (selectedColors.length > 1) {
@@ -162,7 +179,7 @@ const Product = () => {
                         const displayPrice = product.price
 
                         return (
-                            <div key={product.ID} className="product-card group cursor-pointer bg-white overflow-hidden rounded-lg">
+                            <div key={product.ID} onClick={() => handleAddToCart(product)} className="product-card group cursor-pointer bg-white overflow-hidden rounded-lg">
                                 <div className="relative aspect-[4/5] overflow-hidden bg-surface-container-low">
                                     {image ? (
                                         <img
@@ -208,14 +225,26 @@ const Product = () => {
                 </div>
 
                 <div className="mt-section-gap flex justify-center items-center gap-4">
-                    <button className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg text-secondary hover:text-primary hover:border-primary transition-all">
+                    <button 
+                        onClick={() => goToPage(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                        className={`w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg transition-all ${currentPage === 1 ? 'text-outline-variant cursor-not-allowed' : 'text-secondary hover:text-primary hover:border-primary'}`}>
                         <span className="material-symbols-outlined"><ChevronLeft /></span>
                     </button>
-                    <button className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-lg font-label-md text-label-md">1</button>
-                    <button className="w-10 h-10 flex items-center justify-center border border-
-                    outline-variant rounded-lg text-secondary hover:text-primary hover:border-primary transition-all font-label-md text-label-md">2</button>
-                    <button className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg text-secondary hover:text-primary hover:border-primary transition-all font-label-md text-label-md">3</button>
-                    <button className="w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg text-secondary hover:text-primary hover:border-primary transition-all">
+                    
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                        <button 
+                            key={page}
+                            onClick={() => goToPage(page)}
+                            className={`w-10 h-10 flex items-center justify-center rounded-lg font-label-md text-label-md transition-all ${page === currentPage ? 'bg-primary text-white' : 'border border-outline-variant text-secondary hover:text-primary hover:border-primary'}`}>
+                            {page}
+                        </button>
+                    ))}
+
+                    <button 
+                        onClick={() => goToPage(currentPage + 1)} 
+                        disabled={currentPage === totalPages}
+                        className={`w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg transition-all ${currentPage === totalPages ? 'text-outline-variant cursor-not-allowed' : 'text-secondary hover:text-primary hover:border-primary'}`}>
                         <span className="material-symbols-outlined"><ChevronRight /></span>
                     </button>
                 </div>

@@ -5,10 +5,10 @@ import (
 	"strings"
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
-	"github.com/sheiza31/app-ecommerce/config"
-	"github.com/sheiza31/app-ecommerce/models"
-	"github.com/sheiza31/app-ecommerce/requests"
-	"github.com/sheiza31/app-ecommerce/response"
+	"github.com/sheiza31/app-ecommerce/backend/config"
+	"github.com/sheiza31/app-ecommerce/backend/models"
+	"github.com/sheiza31/app-ecommerce/backend/requests"
+	"github.com/sheiza31/app-ecommerce/backend/response"
 )
 
 // GetAllProducts — GET /api/v1/product?color=&category_id=&sort=price_asc|price_desc

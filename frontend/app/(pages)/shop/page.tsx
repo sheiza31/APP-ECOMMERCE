@@ -6,13 +6,23 @@ import ProductSection from "./components/ProductSection";
 import BrandSection from "./components/BrandSection";
 import NewsLetter from "./components/NewsLetter";
 import OAuthTokenHandler from "./components/OAuthTokenHandler";
+import ShopProvider from "./context/ShopContext";
 
-export default async function ShopPage() {
-    return (
-        <>
+export default async function ShopPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const searchParams = await props.searchParams;
+    const token = searchParams?.token;
+
+    if (token) {
+        return (
             <Suspense fallback={null}>
                 <OAuthTokenHandler />
             </Suspense>
+        );
+    }
+
+    return (
+        <>
+            <ShopProvider>
             <ShopLayout>
                 <HeroSection />
                 <FeaturedSection />
@@ -20,6 +30,7 @@ export default async function ShopPage() {
                 <BrandSection />
                 <NewsLetter />
             </ShopLayout>
+            </ShopProvider>
         </>
     );
 }

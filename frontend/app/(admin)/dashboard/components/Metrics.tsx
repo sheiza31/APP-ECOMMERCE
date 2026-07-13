@@ -1,5 +1,33 @@
+"use client"
 import { CreditCard,ShoppingCart,TrendingUp,TrendingDown,User } from "lucide-react"
+import { useState, useEffect } from "react"
+
 const Metrics = () => {
+    const [metrics, setMetrics] = useState({ revenue: 0, orders: 0, customers: 0 })
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            const token = localStorage.getItem("token")
+            if (!token) return
+            try {
+                const res = await fetch("http://localhost:8080/api/v1/order", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                const data = await res.json()
+                if (data.data) {
+                    const orders = data.data
+                    const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.TotalPrice || 0), 0)
+                    const totalOrders = orders.length
+                    const uniqueCustomers = new Set(orders.map((o: any) => o.UserID)).size
+                    setMetrics({ revenue: totalRevenue, orders: totalOrders, customers: uniqueCustomers })
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        fetchOrders()
+    }, [])
+
     return (
         <>
             <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-stack-lg">
@@ -13,8 +41,8 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Total Revenue</p>
-                    <p className="font-display-lg text-[28px] text-primary">$48,290.00</p>
-                    <p className="text-[11px] text-outline mt-2 italic">vs. last month: $43,116</p>
+                    <p className="font-display-lg text-[28px] text-primary">$ {metrics.revenue.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
@@ -26,8 +54,8 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Total Orders</p>
-                    <p className="font-display-lg text-[28px] text-primary">1,240</p>
-                    <p className="text-[11px] text-outline mt-2 italic">vs. last month: 1,180</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.orders.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
@@ -39,8 +67,8 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Active Customers</p>
-                    <p className="font-display-lg text-[28px] text-primary">856</p>
-                    <p className="text-[11px] text-outline mt-2 italic">vs. last month: 792</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.customers.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on unique order users</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">

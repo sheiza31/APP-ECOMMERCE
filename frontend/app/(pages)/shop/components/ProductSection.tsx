@@ -1,4 +1,80 @@
+"use client"
+import { useEffect, useState } from "react"
+import { Package } from "lucide-react"
+import Link from "next/link"
+
+interface ProductVariant {
+    image: string
+}
+
+interface Product {
+    ID: number
+    name: string
+    price: number
+    stock: number
+    ProductsVariants?: ProductVariant[]
+}
+
+interface BestSeller extends Product {
+    soldCount: number
+}
+
+function getProductImage(product: Product): string {
+    return product.ProductsVariants?.find(v => v.image && v.image !== "")?.image ?? ""
+}
+
 const ProductSection = () => {
+    const [bestSellers, setBestSellers] = useState<BestSeller[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchBestSellers = async () => {
+            try {
+                // Hitung best seller dari order items — produk yang paling banyak dipesan
+                const token = localStorage.getItem("token")
+                const headers: HeadersInit = {}
+                if (token) headers["Authorization"] = `Bearer ${token}`
+
+                const [ordersRes, productsRes] = await Promise.all([
+                    fetch("http://localhost:8080/api/v1/order", { headers }).catch(() => null),
+                    fetch("http://localhost:8080/api/v1/product")
+                ])
+
+                const productsData = await productsRes.json()
+                const allProducts: Product[] = Array.isArray(productsData.data) ? productsData.data : []
+
+                // Hitung frekuensi setiap produk di order items
+                const soldMap: Record<number, number> = {}
+
+                if (ordersRes && ordersRes.ok) {
+                    const ordersData = await ordersRes.json()
+                    const orders = Array.isArray(ordersData.data) ? ordersData.data : []
+                    orders.forEach((order: any) => {
+                        const items = order.OrderItems || []
+                        items.forEach((item: any) => {
+                            const pid = item.ProductID || item.product_id
+                            if (pid) soldMap[pid] = (soldMap[pid] || 0) + (item.Quantity || item.quantity || 1)
+                        })
+                    })
+                }
+
+                // Sort produk berdasarkan sold count, ambil top 4
+                const ranked: BestSeller[] = allProducts
+                    .map(p => ({ ...p, soldCount: soldMap[p.ID] || 0 }))
+                    .sort((a, b) => b.soldCount - a.soldCount)
+                    .slice(0, 4)
+
+                setBestSellers(ranked)
+            } catch (err) {
+                console.log(err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchBestSellers()
+    }, [])
+
     return (
         <>
             <section className="py-section-gap bg-surface-container-low w-full">
@@ -8,42 +84,54 @@ const ProductSection = () => {
                         <p className="font-body-md text-body-md text-secondary max-w-lg mx-auto">Our most-loved pieces, chosen by you. Minimalist staples for the discerning eye.</p>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
-                        <div className="group relative flex flex-col">
-                            <div className="aspect-square rounded-lg overflow-hidden mb-stack-md bg-surface-container-lowest shadow-sm relative">
-                                <div className="w-full h-full bg-cover bg-center" data-alt="Minimalist studio product shot of a sleek, matte black thermos bottle against a soft grey background. Clean lighting with soft shadows. Modern aesthetic." style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDXhmJRofM8476TaXNSLvjQbrURIILXQumfUxPDx93mNc82tyeZpzYoSWoqfBhpr5VeLfjtSYTskN78WefGLUYC3Iv6vK0mzF_fFmoYfu0G_V8nNqktM-guBI36xIzhwFeCw8ETh9Ou8A-VFKaSv_tQG91tMb9sDFu60ib_ZhtFmMYqgad6nCo8UymjFgnlHQmyXfAKfAX0nax4KsZW5qtL-jM3HXjceyGcOj3_qip62TlxIzsoSM43FoYoi7KVWe_bmpL703iMLZ4')` }}></div>
-                                <button className="absolute inset-x-stack-md bottom-stack-md py-3 bg-surface-container-lowest/90 backdrop-blur-md text-primary font-label-md text-label-md rounded shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">Quick View</button>
+                        {loading ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex flex-col gap-3 animate-pulse">
+                                    <div className="aspect-square rounded-lg bg-surface-container" />
+                                    <div className="h-4 bg-surface-container rounded w-3/4" />
+                                    <div className="h-3 bg-surface-container rounded w-1/3" />
+                                </div>
+                            ))
+                        ) : bestSellers.length === 0 ? (
+                            <div className="col-span-4 flex flex-col items-center justify-center py-20 text-center">
+                                <Package className="text-outline-variant mb-4" size={64} strokeWidth={1} />
+                                <p className="font-body-md text-secondary">No products available yet.</p>
                             </div>
-                            <h4 className="font-headline-sm text-headline-sm text-primary">Sculptural Vase</h4>
-                            <p className="font-label-md text-label-md text-secondary">$120.00</p>
-                        </div>
-                        <div className="group relative flex flex-col">
-                            <div className="aspect-square rounded-lg overflow-hidden mb-stack-md bg-surface-container-lowest shadow-sm relative">
-                                <div className="w-full h-full bg-cover bg-center" data-alt="Professional studio shot of an ivory colored linen throw pillow with a subtle waffle texture. Placed on a white minimalist pedestal. High-end lifestyle vibe." style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDXvxnkZE3XdBv7NB_D119Wbb9WTJs2C7K9NFTT2q9d6h91rwsurXYG8jj28nxpEtaY8iN6fMghPHBaameZhwOueUl3j8QKHKlT0IyWC7XFihg6Z3tUiMt1yIrRAeLGdtHT-ymQ0mi4VlcFTNIttcSnqe15wdZEnHHwy5FOiUueioRRnxm3gbDUWkc1TcUVh5nElT1dGk7r9bM8gmERXmQpWXwRPdkznDqqZgI0aw1rHKloq_MsBiGClrJAEdAbe8qSAfjdO6HlNQc')` }}></div>
-                                <button className="absolute inset-x-stack-md bottom-stack-md py-3 bg-surface-container-lowest/90 backdrop-blur-md text-primary font-label-md text-label-md rounded shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">Quick View</button>
-                            </div>
-                            <h4 className="font-headline-sm text-headline-sm text-primary">Linen Throw</h4>
-                            <p className="font-label-md text-label-md text-secondary">$85.00</p>
-                        </div>
-                        <div className="group relative flex flex-col">
-                            <div className="aspect-square rounded-lg overflow-hidden mb-stack-md bg-surface-container-lowest shadow-sm relative">
-                                <div className="w-full h-full bg-cover bg-center" data-alt="A pair of minimalist leather sandals in a deep tan color. Placed on a white concrete slab with dramatic architectural shadows. High-fashion footwear photography." style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuBMC-WVIe3T1TCdKtOD1ZAvbU4IH6arHbZgEwcEJpZe1pukdye92h-NyFCLVbIldtVqEzf5dE8TV0Wr7c3DEVdaG4wsvhNQM2PpILJlru0_MybOn7xPaX0ULfKaMbYLpyqbWJUUgJWsbuYr1VHgLMdDdqbLvcFoGYh2YO-QkjlVTROrCNrVdAkHLrje_uoDqIkYAoP6GwjXog5SSdwe8xMMHzb3TW92lPIkdYfLH7IH68fsFDDptDGBJfEhRGS-ESVSBlmDedEtymI')` }}></div>
-                                <button className="absolute inset-x-stack-md bottom-stack-md py-3 bg-surface-container-lowest/90 backdrop-blur-md text-primary font-label-md text-label-md rounded shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">Quick View</button>
-                            </div>
-                            <h4 className="font-headline-sm text-headline-sm text-primary">Tan Slide</h4>
-                            <p className="font-label-md text-label-md text-secondary">$145.00</p>
-                        </div>
-                        <div className="group relative flex flex-col">
-                            <div className="aspect-square rounded-lg overflow-hidden mb-stack-md bg-surface-container-lowest shadow-sm relative">
-                                <div className="w-full h-full bg-cover bg-center" data-alt="A single, elegant soy candle in a heavy smoked-glass jar. The label is white with clean black serif typography. Warm, ambient lighting against a dark wood background." style={{ backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuD23OW5D4x8mQ08o3wK9tfbcDGaqmz1f8NdUTWyP7RMYvXS5Fpj4fmpGQBYkVpOGTIltECESo_Ba8I9xZX88u8ThD_J3mOpaVDbQZ73DZak2x5jOIbOiV_M8Bd5caKkqbX2wUO_WPzpdUve6f6f81VtJrnfPccB-X4U_nyXqB1EtdcMVgRfMagVhYLiGa8ujHGg-1jHoyvy3KLWrclDdCc6D7Zp5BpQ-tFh7zH8rUWSpjhhowPflfuPoTIZE4_xbGQqDV0BQHQHhXw')` }}></div>
-                                <button className="absolute inset-x-stack-md bottom-stack-md py-3 bg-surface-container-lowest/90 backdrop-blur-md text-primary font-label-md text-label-md rounded shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">Quick View</button>
-                            </div>
-                            <h4 className="font-headline-sm text-headline-sm text-primary">Cedar Candle</h4>
-                            <p className="font-label-md text-label-md text-secondary">$48.00</p>
-                        </div>
+                        ) : bestSellers.map((product) => {
+                            const image = getProductImage(product)
+                            return (
+                                <Link href="/collections" key={product.ID} className="group relative flex flex-col">
+                                    <div className="aspect-square rounded-lg overflow-hidden mb-stack-md bg-surface-container-lowest shadow-sm relative">
+                                        {image ? (
+                                            <img
+                                                src={image}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-surface-container">
+                                                <Package className="text-outline-variant" size={48} strokeWidth={1} />
+                                            </div>
+                                        )}
+                                        <button className="absolute inset-x-stack-md bottom-stack-md py-3 bg-surface-container-lowest/90 backdrop-blur-md text-primary font-label-md text-label-md rounded shadow-xl opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                                            Quick View
+                                        </button>
+                                        {product.soldCount > 0 && (
+                                            <span className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                {product.soldCount} sold
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h4 className="font-headline-sm text-headline-sm text-primary line-clamp-1">{product.name}</h4>
+                                    <p className="font-label-md text-label-md text-secondary">${product.price?.toFixed(2)}</p>
+                                </Link>
+                            )
+                        })}
                     </div>
                 </div>
             </section>
         </>
     )
 }
+
 export default ProductSection

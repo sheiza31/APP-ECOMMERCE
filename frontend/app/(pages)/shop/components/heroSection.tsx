@@ -10,7 +10,7 @@ const HeroSection = () => {
                     <h1 className="font-display-lg text-display-lg md:text-[64px] mb-6 animate-fade-in tracking-tight">Elevate Your Essentials</h1>
                     <p className="font-body-lg text-body-lg max-w-2xl mb-10 opacity-90">Curated design meets mindfulness of everyday. Discover a modern collection of essentials for the body and today's lifestyle.</p>
                     <div className="flex flex-col sm:flex-row gap-4">
-                        <Link href="#" className="px-10 py-4 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-all shadow-lg active:scale-95" >SHOP NEW ARRIVALS</Link>
+                        <Link href="new-arrivals" className="px-10 py-4 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-all shadow-lg active:scale-95" >SHOP NEW ARRIVALS</Link>
                         <Link href="/ourstory" className="px-10 py-4 border border-on-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-on-primary hover:text-primary transition-all backdrop-blur-sm" >OUR STORY</Link>
                     </div>
                 </div>

@@ -8,7 +8,7 @@ const Header = () => {
                         <div className="hidden md:flex items-center gap-8">
                             <a className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="/shop">Shop</a>
                             <a className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="/collections">Collection</a>
-                            <a className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">Sustainability</a>
+                            <a className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="/sustainability">Sustainability</a>
                             <a className="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1" href="/ourstory">Our Story</a>
                         </div>
                     </div>
@@ -23,4 +23,4 @@ const Header = () => {
     )
 }
 
-export default Header
+export default Header   

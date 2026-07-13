@@ -29,7 +29,7 @@ const FormRegister = () => {
 
     return (
         <>
-            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-gutter items-center">
+            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2  items-center">
                 <div className="hidden lg:block relative rounded-xl overflow-hidden h-[500px] w-[400px] shadow-md group">
                     <div className="absolute inset-0 bg-primary/20 mix-blend-multiply z-10"></div>
                     <img className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A high-end, editorial fashion lifestyle shot featuring minimalist sustainable clothing. A model stands in a brightly lit, expansive modern architectural space with clean lines and soft shadows. The lighting is natural and sophisticated, emphasizing a clean light-mode aesthetic with a palette of whites, creams, and deep indigo accents. The mood is calm, reliable, and premium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXXwS7TLzMlVRMXUEtsuyQuEJPfKOT7jHmNMzzNCXBW3QGqdTczQqvbIk5FKef2oOCRewQ_JZESs-Vl_hjph0sVYTj3mH_eZiysd8c0WHu3T4G8wrsdonLoHMqF2K6tK_OPns7fAFlmsmVHSjKemaEF7gDQA0XTo22iEzQP0gFf2e7Ce7agBLCyAlw-BtEKNjiKP6fZpUF_84Qz0ko6PrMGwE_nDrqsYnCOmdpAZkUge3-4MGrxXC8WYcNs90WGlnTxS_V5Vdjeqc" />

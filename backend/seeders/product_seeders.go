@@ -2,8 +2,8 @@ package seeders
 
 import (
 	"log"
-	"github.com/sheiza31/app-ecommerce/config"
-	"github.com/sheiza31/app-ecommerce/models"
+	"github.com/sheiza31/app-ecommerce/backend/config"
+	"github.com/sheiza31/app-ecommerce/backend/models"
 )
 
 func ProductSeeder() {

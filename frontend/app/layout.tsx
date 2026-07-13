@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Lumina|E-commerce",
 };
 
+import { Providers } from "./providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" >
       <body className="bg-surface text-on-surface min-h-screen flex flex-col">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

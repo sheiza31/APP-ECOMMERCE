@@ -12,4 +12,6 @@ type User struct {
 	Address string `gorm:"type:varchar(255)"`
 	Role string `gorm:"type:enum('admin','user');default:'user';not null"`
 	Avatar string `gorm:"type:varchar(255)"`
+	Orders []Order `gorm:"foreignKey:UserID"`
+	Carts []Cart `gorm:"foreignKey:UserID"`
 }

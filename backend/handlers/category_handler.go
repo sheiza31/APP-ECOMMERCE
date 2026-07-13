@@ -2,10 +2,10 @@ package handlers
 import (
 	"net/http"
 	"github.com/gin-gonic/gin"
-	"github.com/sheiza31/app-ecommerce/config"
-	"github.com/sheiza31/app-ecommerce/models"
-	"github.com/sheiza31/app-ecommerce/requests"
-	"github.com/sheiza31/app-ecommerce/response"
+	"github.com/sheiza31/app-ecommerce/backend/config"
+	"github.com/sheiza31/app-ecommerce/backend/models"
+	"github.com/sheiza31/app-ecommerce/backend/requests"
+	"github.com/sheiza31/app-ecommerce/backend/response"
 	"github.com/gosimple/slug"
 	"strings"
 )
@@ -28,7 +28,6 @@ func GetCategoryByID(c *gin.Context) {
 func CreateCategory(c *gin.Context) {
     var req requests.CategoryRequest
 
-    //  GANTI DISINI: ShouldBind otomatis bisa baca form-data maupun JSON
     if err := c.ShouldBindJSON(&req); err != nil {
         c.JSON(http.StatusBadRequest, gin.H{
             "error": err.Error(),

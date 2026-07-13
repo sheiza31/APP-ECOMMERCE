@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { LayoutDashboard,ShoppingBag,Truck,Users,LogOut,HelpCircle } from "lucide-react"
+import { LayoutDashboard,ShoppingBag,Truck,Users,LogOut,HelpCircle,ChartLine,Ad } from "lucide-react"
 import { useRouter } from "next/navigation"
 const AsideBar = () => {
     const router = useRouter();
@@ -15,6 +15,10 @@ const AsideBar = () => {
         const json = await response.json();
         if (json.status === 200) {
             localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            // Hapus cookie role dan token
+            document.cookie = "token=; path=/; max-age=0";
+            document.cookie = "role=; path=/; max-age=0";
             router.push("/");
         }
     }
@@ -42,13 +46,13 @@ const AsideBar = () => {
                         <span className="material-symbols-outlined"><Users /></span>
                         <span className="font-label-md text-label-md">Customers</span>
                     </Link>
-                    <Link className="flex items-center gap-stack-md text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-surface-container-high dark:hover:bg-secondary-fixed-dim transition-all duration-200 ease-in-out" href="#">
-                        <span className="material-symbols-outlined">analytics</span>
+                    <Link className="flex items-center gap-stack-md text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-surface-container-high dark:hover:bg-secondary-fixed-dim transition-all duration-200 ease-in-out" href="/analytics">
+                        <span className="material-symbols-outlined"><ChartLine /></span>
                         <span className="font-label-md text-label-md">Analytics</span>
                     </Link>
                     <Link className="flex items-center gap-stack-md text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-surface-container-high dark:hover:bg-secondary-fixed-dim transition-all duration-200 ease-in-out" href="#">
-                        <span className="material-symbols-outlined">campaign</span>
-                        <span className="font-label-md text-label-md">Marketing</span>
+                        <span className="material-symbols-outlined"><Ad /></span>
+                        <span className="font-label-md text-label-md">Category</span>
                     </Link>
                 </nav>
                 <div className="mt-auto pt-6 border-t border-outline-variant px-4 space-y-4">

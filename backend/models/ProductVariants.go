@@ -14,4 +14,5 @@ type ProductVariant struct {
 	Image string `json:"image"`
 	Color string `gorm:"type:varchar(255)" json:"color"`
 	Size string `gorm:"type:varchar(255)" json:"size"`
+	Product Product `gorm:"foreignKey:ProductID"`
 } 

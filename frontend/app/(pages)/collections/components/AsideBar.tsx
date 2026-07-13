@@ -34,7 +34,8 @@ const AsideBar = () => {
                     },
                 })
                 const data = await res.json()
-                setCategories(data.data ?? [])
+                // Pastikan selalu array meskipun backend return null/object
+                setCategories(Array.isArray(data.data) ? data.data : [])
             } catch {
                 console.error("Failed to fetch categories")
             }

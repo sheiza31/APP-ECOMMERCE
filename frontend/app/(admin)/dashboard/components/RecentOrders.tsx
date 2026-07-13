@@ -1,4 +1,93 @@
+"use client"
+import { Trash, Edit2, X, Check } from "lucide-react"
+import { useEffect, useState } from "react"
+interface Order {
+  ID: number;
+  OrderNumber: string;
+  TotalPrice: number;
+  OrderStatus: string;
+  User: {
+    Name: string;
+  };
+  OrderItems: {
+    Product: {
+      name: string;
+    };
+  }[];
+}
 const RecentOrders = () => {
+    const [order,setOrders] = useState<Order[]>([])
+    const [editingId, setEditingId] = useState<number | null>(null)
+    const [editStatus, setEditStatus] = useState("")
+
+    const fetchOrder = async () => {
+      const token = localStorage.getItem("token")
+      const response = await fetch("http://localhost:8080/api/v1/order", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      console.log(data.data);
+      setOrders(data.data || []);
+    };
+
+    useEffect(() => {
+      fetchOrder();
+    }, []);
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this order?")) return;
+        const token = localStorage.getItem("token")
+        try {
+            const data = await fetch(`http://localhost:8080/api/v1/order/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            if (data.ok) {
+                fetchOrder()
+            } else {
+                alert("Failed to delete order")
+            }
+        } catch (error) {
+            console.log(error)
+            alert("Error deleting order")
+        }
+    }
+
+    const handleUpdate = async (id: number) => {
+        const token = localStorage.getItem("token")
+        try {
+            const data = await fetch(`http://localhost:8080/api/v1/order/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    order_status: editStatus
+                })
+            })
+            if (data.ok) {
+                setEditingId(null)
+                fetchOrder()
+            } else {
+                alert("Failed to update order")
+            }
+        } catch (error) {
+            console.log(error)
+            alert("Error updating order")
+        }
+    }
+
+    const startEditing = (item: Order) => {
+        setEditingId(item.ID)
+        setEditStatus(item.OrderStatus)
+    }
     return (
         <>
             <section className="mt-stack-lg bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
@@ -19,91 +108,65 @@ const RecentOrders = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant">
-                            <tr className="hover:bg-surface-container transition-colors">
-                                <td className="px-6 py-4 text-body-sm font-semibold text-primary">#ORD-2841</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[10px]">SC</div>
-                                        <span className="text-body-sm font-medium text-primary">Sophia Chen</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-body-sm text-secondary">Cashmere Scarf, Slate</td>
-                                <td className="px-6 py-4 text-body-sm font-bold text-primary">$180.00</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Processing</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-outline hover:text-primary"><span className="material-symbols-outlined">more_horiz</span></button>
-                                </td>
-                            </tr>
-                            <tr className="hover:bg-surface-container transition-colors">
-                                <td className="px-6 py-4 text-body-sm font-semibold text-primary">#ORD-2840</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container font-bold text-[10px]">MK</div>
-                                        <span className="text-body-sm font-medium text-primary">Marcus King</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-body-sm text-secondary">Tech Briefcase</td>
-                                <td className="px-6 py-4 text-body-sm font-bold text-primary">$350.00</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Shipped</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-outline hover:text-primary"><span className="material-symbols-outlined">more_horiz</span></button>
-                                </td>
-                            </tr>
-                            <tr className="hover:bg-surface-container transition-colors">
-                                <td className="px-6 py-4 text-body-sm font-semibold text-primary">#ORD-2839</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed font-bold text-[10px]">EL</div>
-                                        <span className="text-body-sm font-medium text-primary">Emma Larsson</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-body-sm text-secondary">Wool Overcoat</td>
-                                <td className="px-6 py-4 text-body-sm font-bold text-primary">$890.00</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Delivered</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-outline hover:text-primary"><span className="material-symbols-outlined">more_horiz</span></button>
-                                </td>
-                            </tr>
-                            <tr className="hover:bg-surface-container transition-colors">
-                                <td className="px-6 py-4 text-body-sm font-semibold text-primary">#ORD-2838</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-error-container flex items-center justify-center text-on-error-container font-bold text-[10px]">JD</div>
-                                        <span className="text-body-sm font-medium text-primary">Julian Drake</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-body-sm text-secondary">Dusk Watch v2</td>
-                                <td className="px-6 py-4 text-body-sm font-bold text-primary">$1,200.00</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Delivered</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-outline hover:text-primary"><span className="material-symbols-outlined">more_horiz</span></button>
-                                </td>
-                            </tr>
-                            <tr className="hover:bg-surface-container transition-colors">
-                                <td className="px-6 py-4 text-body-sm font-semibold text-primary">#ORD-2837</td>
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white font-bold text-[10px]">AL</div>
-                                        <span className="text-body-sm font-medium text-primary">Aria Loft</span>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-body-sm text-secondary">Ceramic Vase Set</td>
-                                <td className="px-6 py-4 text-body-sm font-bold text-primary">$245.00</td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Processing</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-outline hover:text-primary"><span className="material-symbols-outlined">more_horiz</span></button>
-                                </td>
-                            </tr>
+                            {order.map((item, index) => (
+                                <tr key={index} className="hover:bg-surface-container transition-colors">
+                                    <td className="px-6 py-4 text-body-sm font-semibold text-primary">{item.OrderNumber}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-[10px]">
+                                                {item.User?.Name?.charAt(0).toUpperCase()}
+                                            </div>
+                                            <span className="text-body-sm font-medium text-primary">{item.User?.Name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-body-sm text-secondary">
+                                        {item.OrderItems?.[0]?.Product?.name || "Unknown Product"}
+                                    </td>
+                                    <td className="px-6 py-4 text-body-sm font-bold text-primary">
+                                        $ {item.TotalPrice?.toLocaleString("id-ID")}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {editingId === item.ID ? (
+                                            <select 
+                                                value={editStatus} 
+                                                onChange={(e) => setEditStatus(e.target.value)}
+                                                className="border rounded px-2 py-1 font-body-sm outline-none focus:ring-1 focus:ring-primary"
+                                            >
+                                                <option value="pending">pending</option>
+                                                <option value="paid">paid</option>
+                                                <option value="shipped">shipped</option>
+                                                <option value="completed">completed</option>
+                                                <option value="cancelled">cancelled</option>
+                                            </select>
+                                        ) : (
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${item.OrderStatus === "paid" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}>
+                                                {item.OrderStatus}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        {editingId === item.ID ? (
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => handleUpdate(item.ID)} className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-all" title="Save">
+                                                    <Check size={18} />
+                                                </button>
+                                                <button onClick={() => setEditingId(null)} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-all" title="Cancel">
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => startEditing(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-all" title="Edit">
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button onClick={() => handleDelete(item.ID)} className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-all" title="Delete">
+                                                    <Trash size={18} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>

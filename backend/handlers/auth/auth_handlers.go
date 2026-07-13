@@ -1,15 +1,17 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
+	"path/filepath"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"github.com/sheiza31/app-ecommerce/config"
-	"github.com/sheiza31/app-ecommerce/helpers"
-	"github.com/sheiza31/app-ecommerce/models"
-	"github.com/sheiza31/app-ecommerce/requests"
-	"github.com/sheiza31/app-ecommerce/response"
-	"github.com/sheiza31/app-ecommerce/utils"
+	"github.com/sheiza31/app-ecommerce/backend/config"
+	"github.com/sheiza31/app-ecommerce/backend/helpers"
+	"github.com/sheiza31/app-ecommerce/backend/models"
+	"github.com/sheiza31/app-ecommerce/backend/requests"
+	"github.com/sheiza31/app-ecommerce/backend/response"
+	"github.com/sheiza31/app-ecommerce/backend/utils"
 )
 
 func Register(c *gin.Context) {
@@ -68,7 +70,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken(user.ID)
+	token, err := utils.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		response.ErrorJSON(c, http.StatusInternalServerError, "Gagal generate token login", err)
 		return
@@ -210,7 +212,7 @@ func GoogleCallback(c *gin.Context) {
 	}
 
 	// Generate JWT Token lokal
-	jwtToken, err := utils.GenerateToken(user.ID)
+	jwtToken, err := utils.GenerateToken(user.ID, user.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal membuat token"})
 		return
@@ -220,3 +222,99 @@ func GoogleCallback(c *gin.Context) {
 	targetFrontend := "http://localhost:3000/shop?token=" + jwtToken
 	c.Redirect(http.StatusMovedPermanently, targetFrontend)
 }
+
+func GetMe(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.ErrorJSON(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		response.ErrorJSON(c, http.StatusNotFound, "User not found", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"message": "User found",
+		"data": gin.H{
+			"id": user.ID,
+			"name": user.Name,
+			"email": user.Email,
+			"role": user.Role,
+			"phone": user.Phone,
+			"address": user.Address,
+			"avatar": user.Avatar,
+		},
+	})
+}
+
+func UpdateMe(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.ErrorJSON(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		response.ErrorJSON(c, http.StatusNotFound, "User not found", err)
+		return
+	}
+
+	// Retrieve fields from form data
+	name := c.PostForm("name")
+	email := c.PostForm("email")
+	phone := c.PostForm("phone")
+	address := c.PostForm("address")
+
+	if name != "" {
+		user.Name = name
+	}
+	if email != "" {
+		user.Email = email
+	}
+	if phone != "" {
+		user.Phone = phone
+	}
+	if address != "" {
+		user.Address = address
+	}
+
+	// Handle avatar upload
+	file, err := c.FormFile("avatar")
+	if err == nil && file != nil {
+		// Ensure unique filename using user ID
+		filename := fmt.Sprintf("avatar_%d%s", user.ID, filepath.Ext(file.Filename))
+		uploadPath := filepath.Join("uploads", "avatars", filename)
+		
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			response.ErrorJSON(c, http.StatusInternalServerError, "Failed to save avatar", err)
+			return
+		}
+		// Save the public path
+		user.Avatar = "/" + filepath.ToSlash(uploadPath)
+	}
+
+	if err := config.DB.Save(&user).Error; err != nil {
+		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to update profile", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": http.StatusOK,
+		"message": "Profile updated successfully",
+		"data": gin.H{
+			"id": user.ID,
+			"name": user.Name,
+			"email": user.Email,
+			"phone": user.Phone,
+			"address": user.Address,
+			"avatar": user.Avatar,
+			"role": user.Role,
+		},
+	})
+}
+
