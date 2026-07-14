@@ -50,14 +50,6 @@ const Header = () => {
                     <span className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">LUMINA</span> 
                 </div>
                 <div className="flex items-center gap-6">
-                    <button className="text-secondary dark:text-secondary-fixed hover:text-primary transition-colors relative cursor-pointer active:scale-95 duration-200">
-                        <span className="material-symbols-outlined"><Bell /></span>
-                        <span className="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
-                    </button>
-                    <button className="text-secondary dark:text-secondary-fixed hover:text-primary transition-colors cursor-pointer active:scale-95 duration-200">
-                        <span className="material-symbols-outlined"><Settings /></span>
-                    </button>
-                    
                     <div className="relative">
                         <div 
                             className="flex items-center gap-3 pl-6 border-l border-outline-variant cursor-pointer hover:opacity-80 transition-opacity"

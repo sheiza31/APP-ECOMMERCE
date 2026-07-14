@@ -197,7 +197,7 @@ const MainDetails = () => {
                                 <Truck size={20} />
                                 Track Order
                             </button>
-                            <button onClick={() => router.push("/shop")} className="w-full bg-surface text-primary border border-primary py-stack-md rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all flex items-center justify-center gap-2">
+                            <button onClick={() => router.push("/collections")} className="w-full bg-surface text-primary border border-primary py-stack-md rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all flex items-center justify-center gap-2">
                                 <ShoppingBag size={20} />
                                 Continue Shopping
                             </button>

@@ -50,7 +50,7 @@ const AsideBar = () => {
                         <span className="material-symbols-outlined"><ChartLine /></span>
                         <span className="font-label-md text-label-md">Analytics</span>
                     </Link>
-                    <Link className="flex items-center gap-stack-md text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-surface-container-high dark:hover:bg-secondary-fixed-dim transition-all duration-200 ease-in-out" href="#">
+                    <Link className="flex items-center gap-stack-md text-secondary dark:text-secondary-fixed-dim px-4 py-3 hover:bg-surface-container-high dark:hover:bg-secondary-fixed-dim transition-all duration-200 ease-in-out" href="/categories">
                         <span className="material-symbols-outlined"><Ad /></span>
                         <span className="font-label-md text-label-md">Category</span>
                     </Link>

@@ -7,14 +7,7 @@ const Header = () => {
                     <Search />
                     <input className="bg-transparent border-none focus:ring-0 text-body-sm font-body-sm w-full ml-2" placeholder="Search analytics, reports, dates..." type="text" />
                 </div>
-                <div className="flex items-center space-x-4">
-                    <button className="p-2 hover:bg-surface-variant/50 rounded-full transition-all relative">
-                        <span className="material-symbols-outlined text-primary" data-icon="notifications"><Bell /></span>
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
-                    </button>
-                    <button className="p-2 hover:bg-surface-variant/50 rounded-full transition-all">
-                        <span className="material-symbols-outlined text-primary" data-icon="settings"><Settings /></span>
-                    </button>
+                <div className="fle x items-center space-x-4">
                     <div className="h-8 w-px bg-outline-variant mx-2"></div>
                     <div className="flex items-center space-x-3 cursor-pointer p-1 pl-3 hover:bg-surface-variant/50 rounded-full transition-all">
                         <span className="text-right hidden sm:block">

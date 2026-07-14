@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 const Header = () => {
     const { click, setClick } = useSustainabilityContext()
     const router = useRouter()
-    const token = localStorage.getItem("token")
     const handleLogout = async () => {
+        const token = localStorage.getItem("token")
         const data = await fetch("http://localhost:8080/api/v1/auth/logout", {
             method: "POST",
             headers: {
