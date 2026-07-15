@@ -12,11 +12,6 @@ const Header = () => {
                             <a className="font-label-md text-label-md text-primary font-bold border-b-2 border-primary pb-1" href="/ourstory">Our Story</a>
                         </div>
                     </div>
-                    <div className="flex items-center gap-stack-md">
-                        <button className="material-symbols-outlined text-primary hover:opacity-70 transition-opacity p-2" data-icon="shopping_bag"></button>
-                        <button className="material-symbols-outlined text-primary hover:opacity-70 transition-opacity p-2" data-icon="person"></button>
-                        <button className="md:hidden material-symbols-outlined text-primary p-2" data-icon="menu"></button>
-                    </div>
                 </nav>
             </header>
         </>

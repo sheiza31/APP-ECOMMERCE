@@ -12,7 +12,6 @@ const HeroSection = () => {
                     <span className="font-label-sm text-label-sm text-primary-fixed bg-primary-container px-3 py-1 rounded-full mb-stack-md tracking-widest uppercase">The Process</span>
                     <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg text-on-primary max-w-2xl mb-stack-lg">Artistry in Every Detail</h1>
                     <button className="group flex items-center gap-stack-sm bg-on-primary text-primary px-8 py-4 rounded-lg font-label-md text-label-md hover:bg-primary-fixed transition-all duration-300">
-                        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}><Play /></span>
                         Watch the Film
                     </button>
                 </div>

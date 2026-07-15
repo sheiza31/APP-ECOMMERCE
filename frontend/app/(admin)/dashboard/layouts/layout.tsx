@@ -8,7 +8,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <>
             <html lang="en">
                 <head>
-                    <title>Lumina | Dashboard Product</title>
+                    <title>Dashboard</title>
                 </head>
                 <body className="">
                     <AsideBar />

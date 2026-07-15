@@ -12,11 +12,6 @@ const Header = () => {
                     <Link className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="/new-arrivals">New Arrivals</Link>
                     <Link className="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="/sustainability">Sustainability</Link>
                 </nav>
-                <div className="flex items-center gap-stack-md">
-                    <button className="text-primary hover:opacity-80 transition-opacity"><Search /></button>
-                    <button className="text-primary hover:opacity-80 transition-opacity"><ShoppingBag /></button>
-                    <button className="text-primary hover:opacity-80 transition-opacity"><User /></button>
-                </div>
             </header>
         </>
     )

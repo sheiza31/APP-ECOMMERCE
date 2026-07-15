@@ -16,20 +16,6 @@ const Navbar = () => {
                     <Link className="font-label-md text-label-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="/collections">COLLECTION</Link>
                     <Link className="font-label-md text-label-md text-secondary dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed transition-colors" href="/ourstory">OUR STORY</Link>
                 </div>
-                <div className="flex items-center gap-4">
-                    <button className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full transition-all">
-                        <span className="material-symbols-outlined text-primary"><Search /></span>
-                    </button>
-                    <button className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full transition-all relative">
-                        <span className="material-symbols-outlined text-primary"><ShoppingBag /></span>
-                        <span className="absolute top-1 right-1 bg-primary text-on-primary text-[10px] w-4 h-4 flex items-center justify-center rounded-full">2</span>
-                    </button>
-                    <button onClick={()=>{
-                        setClick(!click)
-                    }} className="md:hidden p-1 hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full transition-all">
-                        <span className="material-symbols-outlined text-primary text-2xl"><Menu /></span>
-                    </button>
-                </div>
             </nav>
         </>
     )

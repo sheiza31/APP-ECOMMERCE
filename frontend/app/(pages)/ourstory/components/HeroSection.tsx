@@ -1,3 +1,4 @@
+import { ChevronDown } from "lucide-react"
 const HeroSection = () => {
     return (
         <>
@@ -10,7 +11,7 @@ const HeroSection = () => {
                     <p className="font-body-lg text-body-lg text-surface/90 max-w-2xl mx-auto reveal">Lumina was founded on a singular premise: that the objects we surround ourselves with should possess an enduring soul and a quiet purpose.</p>
                 </div>
                 <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-                    <span className="material-symbols-outlined text-surface">expand_more</span>
+                    <ChevronDown className="text-surface" size={24}/>
                 </div>
             </section>
 

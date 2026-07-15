@@ -11,11 +11,6 @@ const Navbar = () => {
                     <Link className="text-secondary hover:text-primary transition-colors font-label-md text-label-md" href="/new-arrivals">New Arrivals</Link>
                     <Link className="text-secondary hover:text-primary transition-colors font-label-md text-label-md" href="/sustainability">Sustainability</Link>
                 </div>
-                <div className="flex items-center gap-stack-md">
-                    <button className="hover:opacity-80 transition-opacity"><Search /></button>
-                    <button className="hover:opacity-80 transition-opacity"><ShoppingBag /></button>
-                    <button className="hover:opacity-80 transition-opacity"><User /></button>
-                </div>
             </nav>
         </>
     )
