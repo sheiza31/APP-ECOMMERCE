@@ -6,7 +6,7 @@ export default async function CategoriesLayout({children}: {children: React.Reac
        <> 
        <html lang="en">
         <head>
-            <title>Lumina | Dashboard Category</title>
+            <title>Lumina | Dashboard Customers</title>
 
         </head>
         <body className="bg-surface text-on-surface">

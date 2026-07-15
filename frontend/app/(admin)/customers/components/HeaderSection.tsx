@@ -12,9 +12,9 @@ const HeaderSection = () => {
                             router.push('/dashboard')
                         }} className="font-body-sm text-body-sm cursor-pointer text-on-surface-variant">Dashboard</span>
                         <span className="font-body-sm text-body-sm text-on-surface-variant">/</span>
-                        <span className="font-body-sm text-body-sm text-primary font-medium">Categories</span>
+                        <span className="font-body-sm text-body-sm text-primary font-medium">Customers</span>
                     </nav>
-                    <h2 className="font-headline-md text-headline-md text-primary">Categories Management</h2>
+                    <h2 className="font-headline-md text-headline-md text-primary">Customers Management</h2>
                 </div>
             </div>
         </>

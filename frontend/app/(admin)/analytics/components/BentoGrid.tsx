@@ -1,69 +1,87 @@
-import { TrendingUp,ShoppingBag,TrendingDown,Settings,Ad,CreditCard } from "lucide-react"
-const BentoGrid = () => {
+"use client"
+import { CreditCard,ShoppingCart,TrendingUp,TrendingDown,User } from "lucide-react"
+import { useState, useEffect } from "react"
+
+const Metrics = () => {
+    const [metrics, setMetrics] = useState({ totalRevenue: 0, totalOrders: 0, activeCustomers: 0, conversionRate: 0 })
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            const token = localStorage.getItem("token")
+            if (!token) return
+            try {
+                const res = await fetch("http://localhost:8080/api/v1/analytics/dashboard", {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                const data = await res.json()
+                if (data.data && data.data.metrics) {
+                    setMetrics(data.data.metrics)
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        fetchOrders()
+    }, [])
+
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-all group">
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-stack-lg">
+                <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-primary-fixed/30 text-primary rounded-xl group-hover:bg-primary group-hover:text-on-primary transition-colors">
-                            <CreditCard />
+                        <div className="p-2 bg-primary-fixed rounded-lg text-primary">
+                            <span className="material-symbols-outlined"><CreditCard /></span>
                         </div>
-                        <span className="flex items-center text-green-600 font-label-sm text-label-sm bg-green-50 px-2 py-1 rounded-full">
-                            <TrendingUp className="text-[16px] mr-1" />
-                            12.5%
+                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]"><TrendingUp /></span> 12%
                         </span>
                     </div>
-                    <h3 className="font-label-md text-label-md text-secondary mb-1">Total Revenue</h3>
-                    <p className="font-headline-md text-headline-md text-primary font-bold">$124,592.00</p>
-                    <div className="mt-4 h-1 bg-surface-container-low rounded-full overflow-hidden">
-                        <div className="h-full bg-primary w-3/4 rounded-full"></div>
-                    </div>
+                    <p className="text-secondary font-label-md mb-1">Total Revenue</p>
+                    <p className="font-display-lg text-[28px] text-primary">$ {metrics.totalRevenue.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-all group">
+                <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-secondary-container/50 text-on-secondary-container rounded-xl group-hover:bg-black group-hover:text-on-secondary transition-colors">
-                            <Ad />
+                        <div className="p-2 bg-secondary-container rounded-lg text-on-secondary-container">
+                            <span className="material-symbols-outlined"><ShoppingCart /></span>
                         </div>
-                        <span className="flex items-center text-green-600 font-label-sm text-label-sm bg-green-50 px-2 py-1 rounded-full">
-                            <TrendingUp className="text-[16px] mr-1" />
-                            3.2%
+                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]"><TrendingUp /></span> 5%
                         </span>
                     </div>
-                    <h3 className="font-label-md text-label-md text-secondary mb-1">Conversion Rate</h3>
-                    <p className="font-headline-md text-headline-md text-primary font-bold">4.82%</p>
-                    <p className="font-label-sm text-label-sm text-secondary mt-4">Vs. 4.5% last period</p>
+                    <p className="text-secondary font-label-md mb-1">Total Orders</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.totalOrders.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-all group">
+                <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-surface-container-highest text-primary rounded-xl group-hover:bg-black group-hover:text-on-primary-container transition-colors">
-                            <ShoppingBag className="text-white" />
+                        <div className="p-2 bg-tertiary-fixed-dim rounded-lg text-on-tertiary-fixed">
+                            <span className="material-symbols-outlined"><User /></span>
                         </div>
-                        <span className="flex items-center text-red-600 font-label-sm text-label-sm bg-red-50 px-2 py-1 rounded-full">
-                            <TrendingDown className="text-[16px] mr-1" />
-                            0.8%
+                        <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]"><TrendingUp /></span> 8%
                         </span>
                     </div>
-                    <h3 className="font-label-md text-label-md text-secondary mb-1">Avg. Order Value</h3>
-                    <p className="font-headline-md text-headline-md text-primary font-bold">$186.40</p>
-                    <p className="font-label-sm text-label-sm text-secondary mt-4">Benchmark: $190.00</p>
+                    <p className="text-secondary font-label-md mb-1">Active Customers</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.activeCustomers.toLocaleString("id-ID")}</p>
+                    <p className="text-[11px] text-outline mt-2 italic">Based on unique order users</p>
                 </div>
-                <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/30 shadow-sm hover:shadow-md transition-all group">
+                <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-tertiary-fixed text-on-tertiary-fixed rounded-xl group-hover:bg-tertiary group-hover:text-on-tertiary transition-colors">
-                            <Settings />
+                        <div className="p-2 bg-error-container rounded-lg text-on-error-container">
+                            <span className="material-symbols-outlined"><TrendingDown /></span>
                         </div>
-                        <span className="flex items-center text-green-600 font-label-sm text-label-sm bg-green-50 px-2 py-1 rounded-full">
-                            <TrendingUp className="text-[16px] mr-1" />
-                            18%
+                        <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-1 rounded-full flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]"><TrendingDown /></span> 1%
                         </span>
                     </div>
-                    <h3 className="font-label-md text-label-md text-secondary mb-1">Total Sessions</h3>
-                    <p className="font-headline-md text-headline-md text-primary font-bold">48,201</p>
-                    <p className="font-label-sm text-label-sm text-secondary mt-4">84% Organic traffic</p>
+                    <p className="text-secondary font-label-md mb-1">Conversion Rate</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.conversionRate}%</p>
+                    <p className="text-[11px] text-outline mt-2 italic">vs. last month: 3.5%</p>
                 </div>
-            </div>
+            </section>
         </>
     )
 }
 
-export default BentoGrid
+export default Metrics

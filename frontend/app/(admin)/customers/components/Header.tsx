@@ -73,12 +73,6 @@ const Header = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <button className="p-2 text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-all">
-                        <span className="material-symbols-outlined"><Bell/></span>
-                    </button>
-                    <button className="p-2 text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-all">
-                        <span className="material-symbols-outlined"><Settings/></span>
-                    </button>
                     <div className="h-8 w-[1px] bg-outline-variant/30 mx-2"></div>
                     <div className="relative">
                         <div 

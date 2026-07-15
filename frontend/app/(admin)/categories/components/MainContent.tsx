@@ -135,10 +135,10 @@ const MainContent = () => {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-surface-container-low/50">
-                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">Category</th>
-                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">Slug</th>
-                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">Description</th>
-                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10 text-center">Actions</th>
+                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">CATEGORY</th>
+                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">SLUG</th>
+                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10">DESCRIPTION</th>
+                                <th className="px-6 py-4 font-label-md text-label-md text-on-surface-variant border-b border-outline-variant/10 text-center">ACTIONS</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant/10">

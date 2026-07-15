@@ -97,6 +97,17 @@ func SetupRouter() *gin.Engine {
     adminProduct.POST("/product-variant", handlers.CreateProductVariant)
     adminProduct.PUT("/product-variant/:id", handlers.UpdateProductVariant)
     adminProduct.DELETE("/product-variant/:id", handlers.DeleteProductVariant)
+
+    adminAnalytics := router.Group("/api/v1")
+    adminAnalytics.Use(middleware.AuthMiddleware(), middleware.AdminOnly())
+    adminAnalytics.GET("/analytics/dashboard", handlers.GetDashboardAnalytics)
+  }
+
+  {
+    adminUser := router.Group("/api/v1")
+    adminUser.Use(middleware.AuthMiddleware(), middleware.AdminOnly())
+    adminUser.GET("/user", handlers.GetAllUsers)
+    adminUser.DELETE("/user/:id", handlers.DeleteUser)
   }
 
   return router

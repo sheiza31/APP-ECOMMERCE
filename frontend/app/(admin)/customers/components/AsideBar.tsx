@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link";
 import { useState } from "react";
-import { ShoppingCart, Users, Settings,ChartArea,CircleQuestionMark,Ad,Package} from "lucide-react";
+import { ShoppingBag, Users, Settings,ChartArea,LayoutDashboard,Ad,Package} from "lucide-react";
 const AsideBar = () => {
     return (
         <>
@@ -10,15 +10,15 @@ const AsideBar = () => {
                     <h1 className="font-display-lg text-display-lg font-bold tracking-tighter text-primary dark:text-primary-fixed">LUMINA</h1>
                 </div>
                 <nav className="flex-1 px-4 space-y-1">
-                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="#">
-                        <span className="mr-3"><Package /></span>
+                     <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="/dashboard">
+                        <span className="mr-3"><LayoutDashboard /></span>
+                        <span className="font-label-md text-label-md">Dashboard</span>
+                    </Link>
+                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="/products">
+                        <span className="mr-3"><ShoppingBag /></span>
                         <span className="font-label-md text-label-md">Products</span>
                     </Link>
-                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="#">
-                        <span className="mr-3"><ShoppingCart /></span>
-                        <span className="font-label-md text-label-md">Orders</span>
-                    </Link>
-                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="#">
+                    <Link className="flex items-center px-4 py-3 rounded-lg bg-secondary-container text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="/customers">
                         <span className="mr-3"><Users /></span>
                         <span className="font-label-md text-label-md">Customers</span>
                     </Link>
@@ -27,26 +27,11 @@ const AsideBar = () => {
                         <span className="mr-3"><ChartArea /></span>
                         <span className="font-label-md text-label-md">Analytics</span>
                     </Link>
-                    <Link className="flex items-center px-4 py-3 rounded-lg bg-secondary-container text-secondary dark:text-secondary-fixed-dim bg-socondary font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="/categories">
+                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim bg-socondary font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all duration-200 group" href="/categories">
                         <span className="mr-3"><Ad /></span>
                         <span className="font-label-md text-label-md">Category</span>
                     </Link>
                 </nav>
-                <div className="mt-auto px-4 space-y-1">
-                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all" href="#">
-                        <span className="mr-3"><Settings /></span>
-                        <span className="font-label-md text-label-md">Settings</span>
-                    </Link>
-                    <Link className="flex items-center px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:text-primary dark:hover:text-primary-fixed hover:bg-surface-container-highest transition-all" href="#">
-                        <span className="mr-3"><CircleQuestionMark /></span>
-                        <span className="font-label-md text-label-md">Support</span>
-                    </Link>
-                    <div className="pt-6 px-4">
-                        <button className="w-full py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all">
-                            View Storefront
-                        </button>
-                    </div>
-                </div>
             </aside>
         </>
     )
