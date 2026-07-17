@@ -50,6 +50,6 @@ konfigurasi environtment :
 1) cp .env.example .env
 
 Running Frontend :
-1. ./frontend 
+1. cd ./frontend 
 2. npm install
 3. npm run dev
