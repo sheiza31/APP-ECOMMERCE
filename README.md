@@ -46,10 +46,10 @@ cd APP-ECOMMERCE
 
 install depedency 
 go mod tidy
-konfigurasi environtment
-cp .env.example .env
+konfigurasi environtment :
+1) cp .env.example .env
 
-Running Frontend 
-./frontend 
-npm install
-npm run dev
+Running Frontend :
+1. ./frontend 
+2. npm install
+3. npm run dev
