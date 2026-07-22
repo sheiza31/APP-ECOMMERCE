@@ -20,7 +20,11 @@ interface BestSeller extends Product {
 }
 
 function getProductImage(product: Product): string {
-    return product.ProductsVariants?.find(v => v.image && v.image !== "")?.image ?? ""
+    const image = product.ProductsVariants?.find(v => v.image && v.image !== "")?.image ?? ""
+    if (image && !image.startsWith("http")) {
+        return `http://localhost:8080${image}`
+    }
+    return image
 }
 
 const ProductSection = () => {

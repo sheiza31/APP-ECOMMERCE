@@ -1,7 +1,12 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sheiza31/app-ecommerce/backend/config"
@@ -39,7 +44,7 @@ func GetProductVariantByID(c *gin.Context) {
 // CreateProductVariant — POST /api/v1/product-variant
 func CreateProductVariant(c *gin.Context) {
 	var req requests.ProductVariantRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		response.ErrorJSON(c, http.StatusBadRequest, "Invalid request", err)
 		return
 	}
@@ -57,9 +62,26 @@ func CreateProductVariant(c *gin.Context) {
 		Sku:       req.Sku,
 		Price:     req.Price,
 		Stock:     req.Stock,
-		Image:     req.Image,
 		Color:     req.Color,
 		Size:      req.Size,
+	}
+
+	// Handle image file upload
+	file, err := c.FormFile("image_file")
+	if err == nil && file != nil {
+		if err := os.MkdirAll("uploads/products", os.ModePerm); err != nil {
+			response.ErrorJSON(c, http.StatusInternalServerError, "Failed to create uploads directory", err)
+			return
+		}
+		filename := fmt.Sprintf("variant_%d_%d%s", req.ProductID, time.Now().UnixNano(), filepath.Ext(file.Filename))
+		uploadPath := filepath.Join("uploads", "products", filename)
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			response.ErrorJSON(c, http.StatusInternalServerError, "Failed to save variant image", err)
+			return
+		}
+		variant.Image = "/" + filepath.ToSlash(uploadPath)
+	} else if req.Image != "" {
+		variant.Image = req.Image
 	}
 
 	if tx := config.DB.Create(&variant); tx.Error != nil {
@@ -78,18 +100,46 @@ func UpdateProductVariant(c *gin.Context) {
 	}
 
 	var req requests.ProductVariantRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		response.ErrorJSON(c, http.StatusBadRequest, "Invalid request", err)
 		return
 	}
 
-	variant.Name  = req.Name
-	variant.Sku   = req.Sku
+	// Validate product exists
+	var product models.Product
+	if tx := config.DB.First(&product, req.ProductID); tx.Error != nil {
+		response.ErrorJSON(c, http.StatusBadRequest, "Product not found", tx.Error)
+		return
+	}
+
+	variant.Name = req.Name
+	variant.Sku = req.Sku
 	variant.Price = req.Price
 	variant.Stock = req.Stock
-	variant.Image = req.Image
 	variant.Color = req.Color
-	variant.Size  = req.Size
+	variant.Size = req.Size
+
+	// Handle image file upload
+	file, err := c.FormFile("image_file")
+	if err == nil && file != nil {
+		if err := os.MkdirAll("uploads/products", os.ModePerm); err != nil {
+			response.ErrorJSON(c, http.StatusInternalServerError, "Failed to create uploads directory", err)
+			return
+		}
+		filename := fmt.Sprintf("variant_%d_%d%s", req.ProductID, time.Now().UnixNano(), filepath.Ext(file.Filename))
+		uploadPath := filepath.Join("uploads", "products", filename)
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			response.ErrorJSON(c, http.StatusInternalServerError, "Failed to save variant image", err)
+			return
+		}
+		// Delete old file if local
+		if variant.Image != "" && strings.HasPrefix(variant.Image, "/uploads/products/") {
+			_ = os.Remove(strings.TrimPrefix(variant.Image, "/"))
+		}
+		variant.Image = "/" + filepath.ToSlash(uploadPath)
+	} else if req.Image != "" {
+		variant.Image = req.Image
+	}
 
 	if tx := config.DB.Save(&variant); tx.Error != nil {
 		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to update product variant", tx.Error)
@@ -101,7 +151,17 @@ func UpdateProductVariant(c *gin.Context) {
 // DeleteProductVariant — DELETE /api/v1/product-variant/:id
 func DeleteProductVariant(c *gin.Context) {
 	var variant models.ProductVariant
-	if tx := config.DB.Delete(&variant, c.Param("id")); tx.Error != nil {
+	if tx := config.DB.First(&variant, c.Param("id")); tx.Error != nil {
+		response.ErrorJSON(c, http.StatusNotFound, "Product variant not found", tx.Error)
+		return
+	}
+
+	// Delete local file if it exists
+	if variant.Image != "" && strings.HasPrefix(variant.Image, "/uploads/products/") {
+		_ = os.Remove(strings.TrimPrefix(variant.Image, "/"))
+	}
+
+	if tx := config.DB.Delete(&variant); tx.Error != nil {
 		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to delete product variant", tx.Error)
 		return
 	}

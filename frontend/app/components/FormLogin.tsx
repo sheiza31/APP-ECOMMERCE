@@ -1,10 +1,10 @@
 "use client"
-    import { useLoginContext } from "../context/LoginContext"
-    import { Eye, EyeClosed } from 'lucide-react'
-    import { useEffect, useState } from "react"
-    import { useRouter } from "next/navigation"
-    import Link from "next/link"
-    import Image from "next/image"
+import { useLoginContext } from "../context/LoginContext"
+import { Eye, EyeClosed } from 'lucide-react'
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import Image from "next/image"
     const FormLogin = () => {
     const { click, setClick } = useLoginContext()
     const [email, setEmail] = useState("");

@@ -12,7 +12,7 @@ export interface CartItem {
 
 interface CartContextType {
     cart: CartItem[];
-    addToCart: (item: CartItem) => void;
+    addToCart: (item: CartItem) => Promise<boolean>;
     removeFromCart: (id: number) => void;
     clearCart: () => void;
     totalQuantity: number;
@@ -57,23 +57,16 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchCart();
     }, []);
 
-    const addToCart = async (item: CartItem) => {
-        // Optimistic UI update
-        setCart((prevCart) => {
-            const existingItemIndex = prevCart.findIndex((cartItem) => cartItem.id === item.id);
-            if (existingItemIndex >= 0) {
-                const newCart = [...prevCart];
-                newCart[existingItemIndex].quantity += 1;
-                return newCart;
-            } else {
-                return [...prevCart, { ...item, quantity: 1 }];
-            }
-        });
-
+    const addToCart = async (item: CartItem): Promise<boolean> => {
         const token = localStorage.getItem("token");
         if (!token) {
-            alert("Please login to add to cart");
-            return;
+            const Swal = (await import("sweetalert2")).default;
+            Swal.fire({
+                icon: "warning",
+                title: "Perhatian",
+                text: "Silakan login terlebih dahulu untuk berbelanja.",
+            });
+            return false;
         }
 
         try {
@@ -88,13 +81,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     quantity: 1
                 })
             });
-            if (!res.ok) {
-                console.error("Failed to add to cart on backend");
-                fetchCart(); // Revert on failure
+            if (res.ok) {
+                // Sukses dari backend -> ambil data keranjang terbaru untuk update UI
+                fetchCart();
+                return true;
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                const message = errData.message || "Gagal menambahkan produk ke keranjang belanja.";
+                const Swal = (await import("sweetalert2")).default;
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal",
+                    text: message,
+                });
+                console.error("Failed to add to cart on backend:", message);
+                return false;
             }
         } catch (error) {
             console.error(error);
-            fetchCart();
+            const Swal = (await import("sweetalert2")).default;
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: "Terjadi kesalahan jaringan, tidak dapat menghubungi server.",
+            });
+            return false;
         }
     };
 

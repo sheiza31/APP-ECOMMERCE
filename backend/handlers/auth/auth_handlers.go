@@ -199,17 +199,25 @@ func GoogleCallback(c *gin.Context) {
 	var user models.User
 	if err := config.DB.Where("email = ?", googleUser.Email).First(&user).Error; err != nil {
 		// Jika belum, daftarkan sebagai user baru
+		// Hash dummy password agar konsisten dengan user biasa
+		hashedDummy, hashErr := helpers.HashPassword("OAUTH_USER_DUMMY_PASSWORD")
+		if hashErr != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal hash password oauth"})
+			return
+		}
 		user = models.User{
 			Name:     googleUser.Name,
 			Email:    googleUser.Email,
-			Password: "OAUTH_USER_DUMMY_PASSWORD",
+			Password: hashedDummy,
 			Role:     "user",
 		}
 		if err := config.DB.Create(&user).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal membuat user baru"})
+			fmt.Println("[OAuth] Gagal create user:", err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal membuat user baru", "detail": err.Error()})
 			return
 		}
 	}
+
 
 	// Generate JWT Token lokal
 	jwtToken, err := utils.GenerateToken(user.ID, user.Role)

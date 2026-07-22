@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"net/http"
+	"os"
 	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
 	"github.com/sheiza31/app-ecommerce/backend/config"
@@ -137,8 +139,26 @@ func UpdateProduct(c *gin.Context) {
 
 // DeleteProduct — DELETE /api/v1/product/:id
 func DeleteProduct(c *gin.Context) {
+	id := c.Param("id")
+
+	// Fetch variants to delete their files
+	var variants []models.ProductVariant
+	if err := config.DB.Where("product_id = ?", id).Find(&variants).Error; err == nil {
+		for _, v := range variants {
+			if v.Image != "" && strings.HasPrefix(v.Image, "/uploads/products/") {
+				_ = os.Remove(strings.TrimPrefix(v.Image, "/"))
+			}
+		}
+	}
+
+	// Delete variants from database
+	if err := config.DB.Where("product_id = ?", id).Delete(&models.ProductVariant{}).Error; err != nil {
+		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to delete product variants", err)
+		return
+	}
+
 	var product models.Product
-	if tx := config.DB.Delete(&product, c.Param("id")); tx.Error != nil {
+	if tx := config.DB.Delete(&product, id); tx.Error != nil {
 		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to delete product", tx.Error)
 		return
 	}

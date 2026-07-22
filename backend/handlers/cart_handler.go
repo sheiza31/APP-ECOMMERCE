@@ -69,11 +69,25 @@ func AddToCart(c *gin.Context) {
 	if err == nil {
 		proposedQuantity += cartItem.Quantity
 	}
-	if product.Stock < proposedQuantity {
-		errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, product.Stock)
+
+	// Hitung total stock dari variant jika ada, jika tidak gunakan product.Stock
+	var totalStock int
+	var variants []models.ProductVariant
+	config.DB.Where("product_id = ?", product.ID).Find(&variants)
+	if len(variants) > 0 {
+		for _, v := range variants {
+			totalStock += v.Stock
+		}
+	} else {
+		totalStock = product.Stock
+	}
+
+	if totalStock < proposedQuantity {
+		errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, totalStock)
 		response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
 		return
 	}
+
 
 	if err == nil {
 		// Increment quantity

@@ -13,15 +13,6 @@ const Navbar = () => {
                         <a className="text-secondary font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="/new-arrivals">New Arrivals</a>
                         <a className="text-secondary font-medium hover:text-primary transition-colors duration-200 font-label-md text-label-md" href="/sustainability">Sustainability</a>
                     </div>
-                    <div className="flex items-center gap-stack-md">
-                        <button className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full transition-all relative">
-                            <span className="material-symbols-outlined text-primary"><ShoppingBag /></span>
-                            <span className="absolute top-1 right-1 bg-primary text-on-primary text-[10px] w-4 h-4 flex items-center justify-center rounded-full">2</span>
-                        </button>
-                        <button className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-container-highest rounded-full transition-all">
-                            <span className="material-symbols-outlined text-primary"><User /></span>
-                        </button>
-                    </div>
                 </div>
             </nav>
         </>

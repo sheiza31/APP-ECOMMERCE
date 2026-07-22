@@ -9,13 +9,13 @@ const FiltersSortingSection = () => {
                             Category <span className="material-symbols-outlined text-[18px]"><ChevronDown /></span>
                         </button>
                         <button className="flex items-center gap-2 text-label-md font-label-md text-on-surface hover:text-primary">
-                            Size <span className="material-symbols-outlined text-[18px]"><ChevronDown/></span>
+                            Size <span className="material-symbols-outlined text-[18px]"><ChevronDown /></span>
                         </button>
                         <button className="flex items-center gap-2 text-label-md font-label-md text-on-surface hover:text-primary">
-                            Price <span className="material-symbols-outlined text-[18px]"><ChevronDown/></span>
+                            Price <span className="material-symbols-outlined text-[18px]"><ChevronDown /></span>
                         </button>
                         <button className="flex items-center gap-2 text-label-md font-label-md text-on-surface hover:text-primary">
-                            Color <span className="material-symbols-outlined text-[18px]"><ChevronDown/></span>
+                            Color <span className="material-symbols-outlined text-[18px]"><ChevronDown /></span>
                         </button>
                     </div>
                     <div className="flex items-center gap-2 border-l border-outline-variant pl-stack-lg">
@@ -29,5 +29,4 @@ const FiltersSortingSection = () => {
         </>
     )
 }
-
 export default FiltersSortingSection

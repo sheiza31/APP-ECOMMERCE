@@ -6,6 +6,7 @@ import (
 	"github.com/sheiza31/app-ecommerce/backend/seeders"
 	"github.com/joho/godotenv"
 	"fmt"
+	"log"
 )
 
 
@@ -14,17 +15,28 @@ func main() {
 		fmt.Println("Info: Tidak bisa load file .env, membaca dari OS env")
 	}
 	config.ConnectDB()
-	config.DB.AutoMigrate(&models.Category{})
-	config.DB.AutoMigrate(&models.User{})
-	config.DB.AutoMigrate(&models.Order{})
-	config.DB.AutoMigrate(&models.OrderItems{})
-	config.DB.AutoMigrate(&models.Product{})
-	config.DB.AutoMigrate(&models.ProductVariant{})
-	config.DB.AutoMigrate(&models.Cart{}) 
-	config.DB.AutoMigrate(&models.CartItems{})
-	config.DB.AutoMigrate(&models.Transactions{})
+
+	// AutoMigrate semua tabel — pastikan semua berhasil sebelum lanjut
+	migrations := []interface{}{
+		&models.Category{},
+		&models.User{},
+		&models.Order{},
+		&models.OrderItems{},
+		&models.Product{},
+		&models.ProductVariant{},
+		&models.Cart{},
+		&models.CartItems{},
+		&models.Transactions{},
+	}
+	for _, model := range migrations {
+		if err := config.DB.AutoMigrate(model); err != nil {
+			log.Fatalf("[AutoMigrate] Gagal migrate %T: %v", model, err)
+		}
+	}
+	fmt.Println("[DB] Semua tabel berhasil di-migrate")
+
 	seeders.RunSeeder()
 	config.InitOAuthConfig()
 	router := routers.SetupRouter()
 	router.Run(":8080")
-}
+}

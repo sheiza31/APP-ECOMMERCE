@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, Heart, Package } from "lucide-react"
 import { useFilter } from "../context/FilterContext"
 import { useCart } from "../../../context/CartContext"
+import Swal from "sweetalert2"
 
 interface ProductVariant {
     id: number
@@ -29,7 +30,11 @@ const ITEMS_PER_PAGE = 6
 // Resolve a product image: prefer variant images, fallback to placeholder
 function getProductImage(product: Product): string {
     const variantWithImage = product.ProductsVariants?.find(v => v.image && v.image !== "")
-    return variantWithImage?.image ?? ""
+    const image = variantWithImage?.image ?? ""
+    if (image && !image.startsWith("http")) {
+        return `http://localhost:8080${image}`
+    }
+    return image
 }
 
 // Get unique colors for a product from its variants
@@ -60,10 +65,22 @@ const Product = () => {
     const [currentPage, setCurrentPage] = useState(1)
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = async (product: Product) => {
+        const totalStock = product.ProductsVariants?.reduce((acc, v) => acc + (v.stock ?? 0), 0) ?? 0
+
+        if (totalStock <= 0) {
+            Swal.fire({
+                icon: "error",
+                title: "Maaf",
+                text: `Stok produk "${product.name}" sedang tidak tersedia`,
+            })
+            
+            return
+        }
+
         const image = getProductImage(product)
         const colors = getProductColors(product)
-        addToCart({
+        const success = await addToCart({
             id: product.ID,
             name: product.name,
             price: product.price,
@@ -71,8 +88,8 @@ const Product = () => {
             quantity: 1,
             color: colors.length > 0 ? colors[0] : undefined
         })
-        // Optional: show a small toast or visual feedback here
     }
+
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -178,18 +195,28 @@ const Product = () => {
                         const colors = getProductColors(product)
                         const displayPrice = product.price
 
+                        const totalStock = product.ProductsVariants?.reduce((acc, v) => acc + (v.stock ?? 0), 0) ?? 0
+                        const isOutOfStock = totalStock <= 0
+
                         return (
-                            <div key={product.ID} onClick={() => handleAddToCart(product)} className="product-card group cursor-pointer bg-white overflow-hidden rounded-lg">
+                            <div key={product.ID} onClick={() => handleAddToCart(product)} className={`product-card group cursor-pointer bg-white overflow-hidden rounded-lg ${isOutOfStock ? 'opacity-70 !cursor-not-allowed' : ''}`}>
                                 <div className="relative aspect-[4/5] overflow-hidden bg-surface-container-low">
                                     {image ? (
                                         <img
-                                            className="product-image w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            className={`product-image w-full h-full object-cover transition-transform duration-500 ${isOutOfStock ? '' : 'group-hover:scale-105'}`}
                                             src={image}
                                             alt={product.name}
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center bg-surface-container">
                                             <Package className="text-outline-variant" size={48} strokeWidth={1} />
+                                        </div>
+                                    )}
+                                    {isOutOfStock && (
+                                        <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
+                                            <span className="bg-red-600 text-white font-label-md text-label-md px-3 py-1.5 rounded-full uppercase tracking-wider shadow-md">
+                                                Out of Stock
+                                            </span>
                                         </div>
                                     )}
                                     <button className="absolute top-4 right-4 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm hover:bg-white">
