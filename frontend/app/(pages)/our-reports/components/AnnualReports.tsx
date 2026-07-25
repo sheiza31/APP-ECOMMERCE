@@ -1,6 +1,31 @@
+"use client"
 import { Download } from "lucide-react"
 import Link from "next/link"
 const AnnualReports = () => {
+    const handleOurReports = async () => {
+        const token = localStorage.getItem("token")
+        const response = await fetch("http://localhost:8080/api/report/download", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error("Failed to download report:", response.statusText);
+            return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "our-reports.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    }
     return (
         <>
             <section className="mb-section-gap">
@@ -18,7 +43,7 @@ const AnnualReports = () => {
                             <h3 className="font-display-lg text-display-lg-mobile md:text-display-lg mt-stack-md max-w-lg">2023 Impact &amp; Circularity Report</h3>
                         </div>
                         <div className="relative z-10 flex flex-wrap gap-stack-md items-center">
-                            <button className="bg-primary cursor-pointer text-on-primary px-stack-lg py-stack-md rounded-lg font-label-md flex items-center gap-2 hover:bg-opacity-90 transition-all">
+                            <button onClick={handleOurReports} className="bg-primary cursor-pointer text-on-primary px-stack-lg py-stack-md rounded-lg font-label-md flex items-center gap-2 hover:bg-opacity-90 transition-all">
                                 <span className="material-symbols-outlined"><Download /></span> Download PDF
                             </button>
                             <button className="bg-white cursor-pointer border border-outline text-primary px-stack-lg py-stack-md rounded-lg font-label-md hover:bg-surface-container transition-all">

@@ -38,6 +38,16 @@ type CustomerAcquisition struct {
 	Percentage int    `json:"percentage"`
 }
 
+func DownloadReports(c *gin.Context)  {
+   file := "./storage/reports/our-reports.pdf"
+
+    c.Header("Content-Description", "File Transfer")
+    c.Header("Content-Disposition", `attachment; filename="our-reports.pdf"`)
+    c.Header("Content-Type", "application/pdf")
+
+    c.File(file)
+	}
+
 func GetDashboardAnalytics(c *gin.Context) {
 	// 1. Metrics (Total Revenue, Orders, Customers)
 	var metrics DashboardMetrics
@@ -124,4 +134,5 @@ func GetDashboardAnalytics(c *gin.Context) {
 		"topProducts":         topProducts,
 		"customerAcquisition": acquisition,
 	})
+
 }

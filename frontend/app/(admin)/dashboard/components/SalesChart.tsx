@@ -24,6 +24,8 @@ const getStockStatus = (stock: number) => {
     return { label: "Good", cls: "bg-emerald-100 text-emerald-800", icon: <CheckCircle2 size={13} /> }
 }
 
+const BACKEND_URL = "http://localhost:8080"
+
 const SalesChart = () => {
     const [dailyData, setDailyData] = useState<DailyRevenue[]>([])
     const [products, setProducts] = useState<Product[]>([])
@@ -158,7 +160,11 @@ const SalesChart = () => {
                             <p className="text-secondary font-body-sm text-center py-8">No products found</p>
                         ) : products.map((p) => {
                             const status = getStockStatus(p.stock)
-                            const imgSrc = p.ProductsVariants?.find(v => v.image && v.image !== "")?.image ?? null
+                            const imgSrc = (() => {
+                const raw = p.ProductsVariants?.find(v => v.image && v.image !== "")?.image ?? null
+                if (!raw) return null
+                return raw.startsWith("http") ? raw : `${BACKEND_URL}${raw}`
+            })()
                             return (
                                 <div key={p.ID} className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-lg bg-surface-container overflow-hidden shrink-0">

@@ -1,9 +1,13 @@
 "use client"
-import { CreditCard,ShoppingCart,TrendingUp,TrendingDown,User } from "lucide-react"
+import { CreditCard, ShoppingCart, TrendingUp, TrendingDown, User } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useDashboardContext } from "../context/DashboardContext"
+
 
 const Metrics = () => {
     const [metrics, setMetrics] = useState({ revenue: 0, orders: 0, customers: 0 })
+    const { dateRange } = useDashboardContext()
+
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -15,7 +19,20 @@ const Metrics = () => {
                 })
                 const data = await res.json()
                 if (data.data) {
-                    const orders = data.data
+                    let orders = data.data
+
+                    // Apply date range filter
+                    if (dateRange.startDate || dateRange.endDate) {
+                        orders = orders.filter((o: any) => {
+                            const created = new Date(o.CreatedAt)
+                            const dayStart = dateRange.startDate ? new Date(new Date(dateRange.startDate).setHours(0, 0, 0, 0)) : null
+                            const dayEnd = dateRange.endDate ? new Date(new Date(dateRange.endDate).setHours(23, 59, 59, 999)) : null
+                            if (dayStart && created < dayStart) return false
+                            if (dayEnd && created > dayEnd) return false
+                            return true
+                        })
+                    }
+
                     const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.TotalPrice || 0), 0)
                     const totalOrders = orders.length
                     const uniqueCustomers = new Set(orders.map((o: any) => o.UserID)).size
@@ -26,7 +43,8 @@ const Metrics = () => {
             }
         }
         fetchOrders()
-    }, [])
+    }, [dateRange])
+
 
     return (
         <>

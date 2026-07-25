@@ -1,6 +1,8 @@
 "use client"
 import { Trash, Edit2, X, Check } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useDashboardContext } from "../context/DashboardContext"
+
 interface Order {
   ID: number;
   OrderNumber: string;
@@ -16,9 +18,10 @@ interface Order {
   }[];
 }
 const RecentOrders = () => {
-    const [order,setOrders] = useState<Order[]>([])
+    const [order, setOrders] = useState<Order[]>([])
     const [editingId, setEditingId] = useState<number | null>(null)
     const [editStatus, setEditStatus] = useState("")
+    const { dateRange } = useDashboardContext()
 
     const fetchOrder = async () => {
       const token = localStorage.getItem("token")
@@ -88,11 +91,30 @@ const RecentOrders = () => {
         setEditingId(item.ID)
         setEditStatus(item.OrderStatus)
     }
+
+    // Filter orders by the date range selected in Welcome
+    const filteredOrders = order.filter((o: any) => {
+        if (!dateRange.startDate && !dateRange.endDate) return true
+        const created = new Date(o.CreatedAt)
+        const dayStart = dateRange.startDate ? new Date(dateRange.startDate.setHours(0, 0, 0, 0)) : null
+        const dayEnd = dateRange.endDate ? new Date(dateRange.endDate.setHours(23, 59, 59, 999)) : null
+        if (dayStart && created < dayStart) return false
+        if (dayEnd && created > dayEnd) return false
+        return true
+    })
+
     return (
         <>
             <section className="mt-stack-lg bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden">
                 <div className="px-6 py-5 border-b border-outline-variant flex justify-between items-center">
-                    <h3 className="font-headline-sm text-headline-sm text-primary">Recent Orders</h3>
+                    <div>
+                        <h3 className="font-headline-sm text-headline-sm text-primary">Recent Orders</h3>
+                        {(dateRange.startDate || dateRange.endDate) && (
+                            <p className="text-xs text-outline mt-0.5">
+                                Showing {filteredOrders.length} of {order.length} orders
+                            </p>
+                        )}
+                    </div>
                     <button className="text-primary font-label-md hover:underline">View All Orders</button>
                 </div>
                 <div className="overflow-x-auto">
@@ -108,7 +130,13 @@ const RecentOrders = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-outline-variant">
-                            {order.map((item, index) => (
+                            {filteredOrders.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-secondary font-body-sm">
+                                        No orders found for the selected date range.
+                                    </td>
+                                </tr>
+                            ) : filteredOrders.map((item, index) => (
                                 <tr key={index} className="hover:bg-surface-container transition-colors">
                                     <td className="px-6 py-4 text-body-sm font-semibold text-primary">{item.OrderNumber}</td>
                                     <td className="px-6 py-4">

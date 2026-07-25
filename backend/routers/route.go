@@ -110,5 +110,6 @@ func SetupRouter() *gin.Engine {
     adminUser.DELETE("/user/:id", handlers.DeleteUser)
   }
 
+  router.GET("/api/report/download",handlers.DownloadReports)
   return router
 }
