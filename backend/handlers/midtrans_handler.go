@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"time"
-
 	"github.com/gin-gonic/gin"
 	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
@@ -54,6 +53,7 @@ func CreateQRISPayment(c *gin.Context) {
 
 	// Setup Midtrans client
 	serverKey := strings.TrimSpace(os.Getenv("MIDTRANS_SERVER_KEY"))
+	fmt.Printf("[Midtrans Debug] Loaded Server Key: '%s'\n", serverKey)
 	env := midtrans.Sandbox
 	if strings.TrimSpace(os.Getenv("MIDTRANS_ENV")) == "production" {
 		env = midtrans.Production
@@ -84,11 +84,11 @@ func CreateQRISPayment(c *gin.Context) {
 	itemDetails = append(itemDetails, midtrans.ItemDetails{
 		ID:    "SHIPPING",
 		Name:  "Shipping Fee",
-		Price: 12,
+		Price: 12000,
 		Qty:   1,
 	})
 
-	grossAmount := int64(cart.TotalPrice) + 12
+	grossAmount := int64(cart.TotalPrice) + 12000
 
 	// Create QRIS charge request
 	chargeReq := &coreapi.ChargeReq{
@@ -118,7 +118,7 @@ func CreateQRISPayment(c *gin.Context) {
 	order := models.Order{
 		UserID:        userID.(uint),
 		OrderNumber:   orderNumber,
-		TotalPrice:    cart.TotalPrice + 12,
+		TotalPrice:    cart.TotalPrice + 12000,
 		PaymentMethod: "qris",
 		PaymentStatus: "pending",
 		OrderStatus:   "pending",
@@ -233,6 +233,199 @@ func MidtransNotification(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,
 		"message": "Notification processed successfully",
+	})
+}
+
+func CreateBankTransferPayment(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		response.ErrorJSON(c, http.StatusUnauthorized, "Unauthorized", nil)
+		return
+	}
+
+	// Parse bank parameter
+	var req struct {
+		Bank string `json:"bank" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorJSON(c, http.StatusBadRequest, "Bank parameter is required", err)
+		return
+	}
+	bank := strings.ToLower(req.Bank)
+
+	// Get active cart
+	var cart models.Cart
+	if err := config.DB.Preload("CartItems.Product").Where("user_id = ? AND status = 'active'", userID).First(&cart).Error; err != nil {
+		response.ErrorJSON(c, http.StatusNotFound, "Cart not found", err)
+		return
+	}
+	if len(cart.CartItems) == 0 {
+		response.ErrorJSON(c, http.StatusBadRequest, "Cart is empty", nil)
+		return
+	}
+
+	// Validate Stock for all items before creating request
+	for _, item := range cart.CartItems {
+		var product models.Product
+		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
+			if product.Stock < item.Quantity {
+				errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, product.Stock)
+				response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
+				return
+			}
+		}
+	}
+
+	// Get user info
+	var user models.User
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		response.ErrorJSON(c, http.StatusNotFound, "User not found", err)
+		return
+	}
+
+	// Setup Midtrans client
+	serverKey := strings.TrimSpace(os.Getenv("MIDTRANS_SERVER_KEY"))
+	fmt.Printf("[Midtrans Debug] Loaded Server Key: '%s'\n", serverKey)
+	env := midtrans.Sandbox
+	if strings.TrimSpace(os.Getenv("MIDTRANS_ENV")) == "production" {
+		env = midtrans.Production
+	}
+
+	coreClient := coreapi.Client{}
+	coreClient.New(serverKey, env)
+
+	// Build order number
+	orderNumber := fmt.Sprintf("LUMINA-%d-%d", userID, time.Now().Unix())
+
+	// Build item details
+	var itemDetails []midtrans.ItemDetails
+	for _, item := range cart.CartItems {
+		productName := "Product"
+		if item.Product.Name != "" {
+			productName = item.Product.Name
+		}
+		itemDetails = append(itemDetails, midtrans.ItemDetails{
+			ID:    fmt.Sprintf("PROD-%d", item.ProductID),
+			Name:  productName,
+			Price: int64(item.Price),
+			Qty:   int32(item.Quantity),
+		})
+	}
+
+	// Shipping fee as item
+	itemDetails = append(itemDetails, midtrans.ItemDetails{
+		ID:    "SHIPPING",
+		Name:  "Shipping Fee",
+		Price: 12000,
+		Qty:   1,
+	})
+
+	grossAmount := int64(cart.TotalPrice) + 12000
+
+	// Create charge request
+	chargeReq := &coreapi.ChargeReq{
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  orderNumber,
+			GrossAmt: grossAmount,
+		},
+		Items: &itemDetails,
+		CustomerDetails: &midtrans.CustomerDetails{
+			FName: user.Name,
+			Email: user.Email,
+			Phone: user.Phone,
+		},
+	}
+
+	if bank == "mandiri" {
+		chargeReq.PaymentType = coreapi.PaymentTypeEChannel
+		chargeReq.EChannel = &coreapi.EChannelDetail{
+			BillInfo1: "Payment For:",
+			BillInfo2: "Lumina Order " + orderNumber,
+		}
+	} else if bank == "bca" || bank == "bni" || bank == "bri" {
+		chargeReq.PaymentType = coreapi.PaymentTypeBankTransfer
+		chargeReq.BankTransfer = &coreapi.BankTransferDetails{
+			Bank: midtrans.Bank(bank),
+		}
+	} else {
+		response.ErrorJSON(c, http.StatusBadRequest, "Unsupported bank. Choose bca, bni, bri, or mandiri", nil)
+		return
+	}
+
+	chargeResponse, midtransErr := coreClient.ChargeTransaction(chargeReq)
+	if midtransErr != nil {
+		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to create Bank Transfer: "+midtransErr.GetMessage(), nil)
+		return
+	}
+
+	// Save order in DB
+	order := models.Order{
+		UserID:        userID.(uint),
+		OrderNumber:   orderNumber,
+		TotalPrice:    cart.TotalPrice + 12000,
+		PaymentMethod: "bank_transfer",
+		PaymentStatus: "pending",
+		OrderStatus:   "pending",
+	}
+	config.DB.Create(&order)
+
+	// Save order items
+	for _, item := range cart.CartItems {
+		orderItem := models.OrderItems{
+			OrderID:   order.ID,
+			ProductID: item.ProductID,
+			Quantity:  item.Quantity,
+			Price:     item.Price,
+			Subtotal:  item.Subtotal,
+		}
+		config.DB.Create(&orderItem)
+
+		// Decrement Product Stock
+		var product models.Product
+		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
+			product.Stock -= item.Quantity
+			if product.Stock < 0 {
+				product.Stock = 0
+			}
+			config.DB.Save(&product)
+		}
+	}
+
+	// Mark cart as checked_out
+	cart.Status = "checked_out"
+	config.DB.Save(&cart)
+
+	// Create Transaction Record
+	transaction := models.Transactions{
+		OrderID:       order.ID,
+		PaymentMethod: "bank_transfer_" + bank,
+		Status:        "pending",
+		Amount:        float64(grossAmount),
+	}
+	config.DB.Create(&transaction)
+
+	// Construct response fields
+	respData := gin.H{
+		"order_id":     chargeResponse.OrderID,
+		"order_number": orderNumber,
+		"gross_amount": grossAmount,
+		"bank":         bank,
+		"expire_time":  chargeResponse.ExpiryTime,
+	}
+
+	if bank == "mandiri" {
+		respData["biller_code"] = chargeResponse.BillerCode
+		respData["bill_key"] = chargeResponse.BillKey
+	} else {
+		if len(chargeResponse.VaNumbers) > 0 {
+			respData["va_number"] = chargeResponse.VaNumbers[0].VANumber
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  http.StatusOK,
+		"message": "Bank transfer payment created",
+		"data":    respData,
 	})
 }
 

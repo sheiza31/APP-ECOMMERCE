@@ -1,28 +1,50 @@
 "use client"
-import { CreditCard,ShoppingCart,TrendingUp,TrendingDown,User } from "lucide-react"
+import { CreditCard, ShoppingCart, TrendingUp, TrendingDown, User } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useDashboardContext } from "../../dashboard/context/DashboardContext"
+
 
 const Metrics = () => {
-    const [metrics, setMetrics] = useState({ totalRevenue: 0, totalOrders: 0, activeCustomers: 0, conversionRate: 0 })
+    const [metrics, setMetrics] = useState({ revenue: 0, orders: 0, customers: 0 })
+    const { dateRange } = useDashboardContext()
+
 
     useEffect(() => {
         const fetchOrders = async () => {
             const token = localStorage.getItem("token")
             if (!token) return
             try {
-                const res = await fetch("http://localhost:8080/api/v1/analytics/dashboard", {
+                const res = await fetch("http://localhost:8080/api/v1/order", {
                     headers: { "Authorization": `Bearer ${token}` }
                 })
                 const data = await res.json()
-                if (data.data && data.data.metrics) {
-                    setMetrics(data.data.metrics)
+                if (data.data) {
+                    let orders = data.data
+
+                    // Apply date range filter
+                    if (dateRange.startDate || dateRange.endDate) {
+                        orders = orders.filter((o: any) => {
+                            const created = new Date(o.CreatedAt)
+                            const dayStart = dateRange.startDate ? new Date(new Date(dateRange.startDate).setHours(0, 0, 0, 0)) : null
+                            const dayEnd = dateRange.endDate ? new Date(new Date(dateRange.endDate).setHours(23, 59, 59, 999)) : null
+                            if (dayStart && created < dayStart) return false
+                            if (dayEnd && created > dayEnd) return false
+                            return true
+                        })
+                    }
+
+                    const totalRevenue = orders.reduce((sum: number, o: any) => sum + (o.TotalPrice || 0), 0)
+                    const totalOrders = orders.length
+                    const uniqueCustomers = new Set(orders.map((o: any) => o.UserID)).size
+                    setMetrics({ revenue: totalRevenue, orders: totalOrders, customers: uniqueCustomers })
                 }
             } catch (error) {
                 console.log(error)
             }
         }
         fetchOrders()
-    }, [])
+    }, [dateRange])
+
 
     return (
         <>
@@ -37,7 +59,7 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Total Revenue</p>
-                    <p className="font-display-lg text-[28px] text-primary">$ {metrics.totalRevenue.toLocaleString("id-ID")}</p>
+                    <p className="font-display-lg text-[28px] text-primary">Rp.{metrics.revenue.toLocaleString("id-ID")}</p>
                     <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
@@ -50,7 +72,7 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Total Orders</p>
-                    <p className="font-display-lg text-[28px] text-primary">{metrics.totalOrders.toLocaleString("id-ID")}</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.orders.toLocaleString("id-ID")}</p>
                     <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
@@ -63,7 +85,7 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Active Customers</p>
-                    <p className="font-display-lg text-[28px] text-primary">{metrics.activeCustomers.toLocaleString("id-ID")}</p>
+                    <p className="font-display-lg text-[28px] text-primary">{metrics.customers.toLocaleString("id-ID")}</p>
                     <p className="text-[11px] text-outline mt-2 italic">Based on unique order users</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
@@ -76,7 +98,7 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Conversion Rate</p>
-                    <p className="font-display-lg text-[28px] text-primary">{metrics.conversionRate}%</p>
+                    <p className="font-display-lg text-[28px] text-primary">3.4%</p>
                     <p className="text-[11px] text-outline mt-2 italic">vs. last month: 3.5%</p>
                 </div>
             </section>

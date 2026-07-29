@@ -1,5 +1,5 @@
 "use client"
-import { ArrowLeft, CreditCard, Landmark, Wallet, Building2, Smartphone, QrCode, Clock, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, CreditCard, Landmark, Wallet, Building2, Smartphone, QrCode, Clock, CheckCircle2,Verified } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useCart } from "../../../context/CartContext"
@@ -15,12 +15,27 @@ interface QRISData {
     order_number: string;
 }
 
+interface BankTransferData {
+    order_id: string;
+    order_number: string;
+    gross_amount: number;
+    bank: string;
+    expire_time: string;
+    // BCA, BNI, BRI
+    va_number?: string;
+    // Mandiri
+    biller_code?: string;
+    bill_key?: string;
+}
+
 const FormPayment = () => {
     const router = useRouter();
     const { cart, totalPrice, clearCart } = useCart();
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("credit_card");
     const [loading, setLoading] = useState(false);
     const [qrisData, setQrisData] = useState<QRISData | null>(null);
+    const [selectedBank, setSelectedBank] = useState<string>("bca");
+    const [bankTransferData, setBankTransferData] = useState<BankTransferData | null>(null);
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,6 +68,34 @@ const FormPayment = () => {
             return;
         }
 
+        // For bank_transfer, call the dedicated Midtrans endpoint
+        if (paymentMethod === "bank_transfer") {
+            try {
+                const token = localStorage.getItem("token");
+                const res = await fetch("http://localhost:8080/api/v1/order/bank-transfer", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ bank: selectedBank })
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    setBankTransferData(json.data);
+                } else {
+                    const err = await res.json();
+                    alert(err.message || "Failed to create bank transfer payment");
+                }
+            } catch (error) {
+                console.error("Error creating bank transfer:", error);
+                alert("Error connecting to payment service");
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
         try {
             const token = localStorage.getItem("token");
             const response = await fetch("http://localhost:8080/api/v1/order", {
@@ -64,19 +107,17 @@ const FormPayment = () => {
                 body: JSON.stringify({
                     payment_method: paymentMethod,
                     items: cart,
-                    total_amount: totalPrice + 12
+                    total_amount: totalPrice + 12000
                 })
             });
+            await response.json();
             if (response.ok) {
-                clearCart();
-            } else {
-                alert("Failed to place order.");
+                router.push('/review');
             }
         } catch (error) {
             console.error("Error placing order", error);
         } finally {
             setLoading(false);
-            router.push('/review');
         }
     }
 
@@ -96,7 +137,7 @@ const FormPayment = () => {
                                 <span className={`font-label-md text-label-md ${paymentMethod === "credit_card" ? "text-primary" : "text-secondary"}`}>Credit Card</span>
                             </button>
                             <button 
-                                onClick={() => { setPaymentMethod("bank_transfer"); setQrisData(null); }}
+                                onClick={() => { setPaymentMethod("bank_transfer"); setQrisData(null); setBankTransferData(null); }}
                                 className={`flex flex-col items-center gap-stack-sm p-stack-md rounded-lg transition-all ${paymentMethod === "bank_transfer" ? "border-2 border-primary bg-primary/5" : "border border-outline-variant hover:border-primary"}`}>
                                 <Landmark className={paymentMethod === "bank_transfer" ? "text-primary" : "text-secondary"} />
                                 <span className={`font-label-md text-label-md ${paymentMethod === "bank_transfer" ? "text-primary" : "text-secondary"}`}>Bank Transfer</span>
@@ -152,19 +193,79 @@ const FormPayment = () => {
                         )}
                         {paymentMethod === "bank_transfer" && (
                             <div className="space-y-stack-md">
-                                <div className="space-y-unit">
-                                    <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Select Bank</label>
-                                    <select className="w-full px-stack-md py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md text-primary bg-transparent">
-                                        <option value="bca">BCA (Bank Central Asia)</option>
-                                        <option value="mandiri">Bank Mandiri</option>
-                                        <option value="bni">BNI (Bank Negara Indonesia)</option>
-                                        <option value="bri">BRI (Bank Rakyat Indonesia)</option>
-                                    </select>
-                                </div>
-                                <div className="p-stack-md rounded-lg border border-outline-variant bg-surface-container-low text-center">
-                                    <Building2 className="mx-auto text-secondary mb-2" size={32} />
-                                    <p className="font-body-md text-body-md text-on-surface-variant">Please transfer the exact amount to our bank account. Instructions will be provided on the next page.</p>
-                                </div>
+                                {!bankTransferData ? (
+                                    <>
+                                        <div className="space-y-unit">
+                                            <label className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Select Bank</label>
+                                            <select
+                                                value={selectedBank}
+                                                onChange={(e) => setSelectedBank(e.target.value)}
+                                                className="w-full px-stack-md py-3 rounded-lg border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-body-md text-body-md text-primary bg-surface-container-lowest"
+                                            >
+                                                <option value="bca">BCA (Bank Central Asia)</option>
+                                                <option value="mandiri">Bank Mandiri (Mandiri Bill)</option>
+                                                <option value="bni">BNI (Bank Negara Indonesia)</option>
+                                                <option value="bri">BRI (Bank Rakyat Indonesia)</option>
+                                            </select>
+                                        </div>
+                                        <div className="p-stack-md rounded-lg border border-outline-variant bg-surface-container-low text-center">
+                                            <Building2 className="mx-auto text-secondary mb-2" size={32} />
+                                            <p className="font-body-md text-body-md text-on-surface-variant">
+                                                A Virtual Account number will be generated for you after placing the order. Valid for 24 hours.
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="p-stack-lg rounded-xl border-2 border-primary bg-primary/5 space-y-stack-md">
+                                        <div className="flex items-center gap-2 text-primary">
+                                            <CheckCircle2 size={20} />
+                                            <span className="font-label-md text-label-md">Order Created Successfully!</span>
+                                        </div>
+                                        <h3 className="font-headline-sm text-headline-sm text-primary">Transfer Payment Instructions</h3>
+                                        <div className="space-y-stack-sm">
+                                            {bankTransferData.bank === "mandiri" ? (
+                                                <>
+                                                    <div className="flex justify-between items-center py-2 border-b border-outline-variant">
+                                                        <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Biller Code</span>
+                                                        <span className="font-headline-sm text-headline-sm text-primary tracking-widest select-all">{bankTransferData.biller_code}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center py-2 border-b border-outline-variant">
+                                                        <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Bill Key</span>
+                                                        <span className="font-headline-sm text-headline-sm text-primary tracking-widest select-all">{bankTransferData.bill_key}</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex justify-between items-center py-2 border-b border-outline-variant">
+                                                    <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">{bankTransferData.bank.toUpperCase()} Virtual Account</span>
+                                                    <span className="font-headline-sm text-headline-sm text-primary tracking-widest select-all">{bankTransferData.va_number}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex justify-between items-center py-2 border-b border-outline-variant">
+                                                <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Total Amount</span>
+                                                <span className="font-headline-sm text-headline-sm text-primary">Rp.{bankTransferData.gross_amount?.toLocaleString("id-ID")}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-outline-variant">
+                                                <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Order #</span>
+                                                <span className="font-body-md text-body-md text-primary">{bankTransferData.order_number}</span>
+                                            </div>
+                                            {bankTransferData.expire_time && (
+                                                <div className="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm pt-1">
+                                                    <Clock size={14} />
+                                                    <span>Expires: {new Date(bankTransferData.expire_time).toLocaleString("id-ID")}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="font-body-sm text-body-sm text-on-surface-variant">
+                                            Please complete the payment before the expiry time. Your order will be processed automatically once payment is confirmed.
+                                        </p>
+                                        <button
+                                            onClick={() => { clearCart(); router.push("/review"); }}
+                                            className="w-full bg-primary text-white py-3 rounded-lg font-label-md text-label-md hover:opacity-90 transition-all"
+                                        >
+                                            I&apos;ve Completed Payment
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         )}
                         {paymentMethod === "digital_wallet" && (
@@ -226,7 +327,7 @@ const FormPayment = () => {
                                         </div>
                                         <div className="space-y-1 text-on-surface-variant">
                                             <p className="font-body-sm text-body-sm">Order <strong className="text-primary">#{qrisData.order_number}</strong></p>
-                                            <p className="font-headline-sm text-headline-sm text-primary">${qrisData.gross_amount?.toFixed(2)}</p>
+                                            <p className="font-headline-sm text-headline-sm text-primary">RP.{qrisData.gross_amount?.toFixed(2)}</p>
                                             {qrisData.expire_time && (
                                                 <div className="flex items-center justify-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
                                                     <Clock size={14} />
@@ -260,13 +361,12 @@ const FormPayment = () => {
                     <aside className="sticky top-24 space-y-stack-md">
                         <div className="bg-surface-container-lowest p-stack-lg rounded-xl custom-shadow border border-surface-container-high">
                             <h3 className="font-headline-sm text-headline-sm text-primary mb-stack-lg">Order Summary</h3>
-
                             <div className="space-y-stack-md mb-stack-lg max-h-96 overflow-y-auto pr-2">
                                 {cart.map((item) => (
                                     <div key={item.id} className="flex gap-stack-md">
-                                        <div className="w-20 h-24 bg-surface-container-high rounded-lg overflow-hidden flex-shrink-0">
+                                        <div className="w-20 h-24 bg-surface-container-high rounded-lg overflow-hidden shrink-0">
                                             {item.image ? (
-                                                <img className="w-full h-full object-cover" src={item.image} alt={item.name} />
+                                                <img className="w-full h-full object-cover" src={`http://localhost:8080${item.image}`} alt={item.name} />
                                             ) : (
                                                 <div className="w-full h-full bg-surface-container-high" />
                                             )}
@@ -274,7 +374,7 @@ const FormPayment = () => {
                                         <div className="flex-grow">
                                             <div className="flex justify-between">
                                                 <h4 className="font-label-md text-label-md text-primary">{item.name}</h4>
-                                                <span className="font-body-md text-body-md text-primary">${(item.price * item.quantity).toFixed(2)}</span>
+                                                <span className="font-body-md text-body-md text-primary">Rp.{(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
                                             {item.color && <p className="font-body-sm text-body-sm text-on-surface-variant capitalize">{item.color}</p>}
                                             <p className="font-label-sm text-label-sm text-on-surface-variant mt-2">Qty: {item.quantity}</p>
@@ -286,30 +386,30 @@ const FormPayment = () => {
                             <div className="space-y-stack-sm mb-stack-lg">
                                 <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
                                     <span>Subtotal</span>
-                                    <span>${totalPrice.toFixed(2)}</span>
+                                    <span>RP.{totalPrice.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
                                     <span>Shipping</span>
-                                    <span className="text-secondary">$12.00</span>
+                                    <span className="text-secondary">RP.12000</span>
                                 </div>
                                 <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
                                     <span>Tax</span>
-                                    <span>$0.00</span>
+                                    <span>RP.0.00</span>
                                 </div>
                             </div>
                             <hr className="border-outline-variant mb-stack-lg" />
                             <div className="flex justify-between items-end mb-stack-lg">
                                 <span className="font-headline-sm text-headline-sm text-primary">Total</span>
                                 <div className="text-right">
-                                    <p className="font-display-lg text-[28px] leading-tight text-primary">${(totalPrice + 12).toFixed(2)}</p>
-                                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase">USD</p>
+                                    <p className="font-display-lg text-[28px] leading-tight text-primary">RP.{(totalPrice + 12000).toFixed(2)}</p>
+                                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase">RUPIAH</p>
                                 </div>
                             </div>
                             <button onClick={handlePlaceOrder} disabled={loading} className="w-full bg-primary text-white py-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50">
                                 {loading ? "Processing..." : "Place Order"}
                             </button>
                             <div className="mt-stack-md flex items-center justify-center gap-2 text-on-surface-variant">
-                                <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                                <Verified className="text-[16px]" />
                                 <span className="font-label-sm text-label-sm uppercase tracking-widest">Encrypted Secure Payment</span>
                             </div>
                         </div>

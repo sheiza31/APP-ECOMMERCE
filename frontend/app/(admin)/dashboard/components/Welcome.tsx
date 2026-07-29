@@ -56,7 +56,7 @@ const Welcome = () => {
                         <div className="flex items-center gap-1 text-sm text-secondary font-medium">
                             <DatePicker
                                 selected={dateRange.startDate}
-                                onChange={(date) => setDateRange({ ...dateRange, startDate: date })}
+                                onChange={(date: Date | null) => setDateRange({ ...dateRange, startDate: date })}
                                 selectsStart
                                 startDate={dateRange.startDate}
                                 endDate={dateRange.endDate}
@@ -67,7 +67,7 @@ const Welcome = () => {
                             <span className="text-outline">–</span>
                             <DatePicker
                                 selected={dateRange.endDate}
-                                onChange={(date) => setDateRange({ ...dateRange, endDate: date })}
+                                onChange={(date: Date | null) => setDateRange({ ...dateRange, endDate: date })}
                                 selectsEnd
                                 startDate={dateRange.startDate}
                                 endDate={dateRange.endDate}

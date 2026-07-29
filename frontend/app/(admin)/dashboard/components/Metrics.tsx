@@ -59,7 +59,7 @@ const Metrics = () => {
                         </span>
                     </div>
                     <p className="text-secondary font-label-md mb-1">Total Revenue</p>
-                    <p className="font-display-lg text-[28px] text-primary">$ {metrics.revenue.toLocaleString("id-ID")}</p>
+                    <p className="font-display-lg text-[28px] text-primary">Rp.{metrics.revenue.toLocaleString("id-ID")}</p>
                     <p className="text-[11px] text-outline mt-2 italic">Based on all orders</p>
                 </div>
                 <div className="bento-card bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"github.com/sheiza31/app-ecommerce/backend/config"
@@ -24,6 +25,8 @@ func GetMyOrders(c *gin.Context) {
 		response.ErrorJSON(c, http.StatusInternalServerError, "Failed to fetch orders", err)
 		return
 	}
+	
+	fmt.Printf("%+v\n", orders)
 
 	c.JSON(http.StatusOK, gin.H{
 		"status":  http.StatusOK,

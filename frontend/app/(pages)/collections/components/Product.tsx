@@ -203,7 +203,7 @@ const Product = () => {
                                 <div className="relative aspect-[4/5] overflow-hidden bg-surface-container-low">
                                     {image ? (
                                         <img
-                                            className={`product-image w-full h-full object-cover transition-transform duration-500 ${isOutOfStock ? '' : 'group-hover:scale-105'}`}
+                                            className={`product-image w-full h-full object-cover transition-transform duration-500  ${isOutOfStock ? '' : 'group-hover:scale-105'}`}
                                             src={image}
                                             alt={product.name}
                                         />
@@ -229,7 +229,7 @@ const Product = () => {
                                     </h4>
                                     <div className="flex justify-between items-center mt-2">
                                         <p className="font-body-md text-body-md font-semibold text-primary">
-                                            ${displayPrice.toFixed(2)}
+                                            Rp{displayPrice.toFixed(2)}
                                         </p>
                                         <div className="flex gap-1">
                                             {colors.map((color) => {

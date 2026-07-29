@@ -11,7 +11,7 @@ const DashboardHeader = () => {
                         <span onClick={()=>{
                             router.push("/dashboard")
                         }} className="font-body-sm text-body-sm cursor-pointer border-b border-outline-variant">Dashboard</span>
-                        <span className="text-body-sm" style={{fontSize: "16px;"}}><ChevronRight /></span>
+                        <span className="text-body-sm" style={{fontSize: "16px"}}><ChevronRight /></span>
                         <span className="font-body-sm text-body-sm font-semibold text-primary">Analytics</span>
                     </nav>
                     <h2 className="font-headline-md text-headline-md text-primary">Performance Overview</h2>

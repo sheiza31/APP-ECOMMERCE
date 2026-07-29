@@ -14,11 +14,11 @@ interface UserProfile {
 }
 
 interface OrderItem {
-    id: number;
-    product_id: number;
-    quantity: number;
-    price: number;
-    subtotal: number;
+    ID: number;
+    ProductID: number;
+    Quantity: number;
+    Price: number;
+    Subtotal: number;
     Product?: {
         name: string;
         ProductsVariants?: { image: string, color: string }[];
@@ -145,13 +145,13 @@ function OrderDetailsModal({ order, onClose }: { order: Order; onClose: () => vo
                     <div>
                         <p className="font-label-md text-label-md text-primary mb-3">Items ({order.OrderItems?.length || 0})</p>
                         <div className="space-y-3">
-                            {order.OrderItems?.map((item, i) => {
+                             {order.OrderItems?.map((item, i) => {
                                 const img = item.Product?.ProductsVariants?.find(v => v.image)?.image
                                 return (
                                     <div key={i} className="flex items-center gap-3 p-3 border border-outline-variant rounded-xl">
                                         <div className="w-14 h-14 rounded-lg overflow-hidden bg-surface-container shrink-0">
                                             {img ? (
-                                                <img src={img} alt={item.Product?.name} className="w-full h-full object-cover" />
+                                                <img src={img.startsWith('/') ? `http://localhost:8080${img}` : img} alt={item.Product?.name} className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
                                                     <Package size={24} className="text-outline-variant" />
@@ -160,9 +160,9 @@ function OrderDetailsModal({ order, onClose }: { order: Order; onClose: () => vo
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-label-md text-label-md text-primary truncate">{item.Product?.name || "Unknown Product"}</p>
-                                            <p className="text-on-surface-variant font-body-sm text-body-sm">Qty: {item.quantity} × ${item.price?.toFixed(2)}</p>
+                                            <p className="text-on-surface-variant font-body-sm text-body-sm">Qty: {item.Quantity} × Rp. {item.Price?.toLocaleString("id-ID")}</p>
                                         </div>
-                                        <p className="font-label-md text-label-md text-primary shrink-0">${item.subtotal?.toFixed(2)}</p>
+                                        <p className="font-label-md text-label-md text-primary shrink-0">Rp. {item.Subtotal?.toLocaleString("id-ID")}</p>
                                     </div>
                                 )
                             })}
@@ -430,7 +430,7 @@ const AsideBar = () => {
                                         <div key={order.ID} className="flex flex-col sm:flex-row items-center gap-gutter p-4 border border-outline-variant rounded-lg">
                                             <div className="w-24 h-24 flex-shrink-0 bg-surface-container-low rounded-lg overflow-hidden">
                                                 {productImage ? (
-                                                    <img className="w-full h-full object-cover" src={productImage} alt={productName} />
+                                                    <img className="w-full h-full object-cover" src={`http://localhost:8080${productImage}`} alt={productName} />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm text-center p-2">
                                                         {productName.slice(0, 2).toUpperCase()}
@@ -442,7 +442,7 @@ const AsideBar = () => {
                                                     <h3 className="font-headline-sm text-headline-sm">
                                                         {productName}{extraItems > 0 ? ` + ${extraItems} more` : ""}
                                                     </h3>
-                                                    <span className="font-label-md text-label-md text-primary">${order.TotalPrice?.toFixed(2)}</span>
+                                                    <span className="font-label-md text-label-md text-primary">Rp. {order.TotalPrice?.toFixed(2)}</span>
                                                 </div>
                                                 <p className="text-on-surface-variant font-body-sm text-body-sm">
                                                     Order #{order.OrderNumber || order.ID} • {new Date(order.CreatedAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}

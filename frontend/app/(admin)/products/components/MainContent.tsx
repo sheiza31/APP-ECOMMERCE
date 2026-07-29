@@ -512,13 +512,13 @@ const MainContent = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-secondary mb-1">Base Price ($)</label>
+                                        <label className="block text-xs font-medium text-secondary mb-1">Base Price (Rp)</label>
                                         <input
                                             type="number"
-                                            step="0.01"
+                                            step="10000"
                                             value={price}
                                             onChange={(e) => setPrice(e.target.value)}
-                                            placeholder="129.99"
+                                            placeholder="120000"
                                             className="w-full rounded-xl border border-outline-variant/50 px-4 py-2.5 bg-white text-primary outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-body-md"
                                             required
                                         />

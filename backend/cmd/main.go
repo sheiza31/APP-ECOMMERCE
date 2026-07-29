@@ -3,7 +3,6 @@ import (
 	"github.com/sheiza31/app-ecommerce/backend/routers"
 	"github.com/sheiza31/app-ecommerce/backend/config"
 	"github.com/sheiza31/app-ecommerce/backend/models"
-	"github.com/sheiza31/app-ecommerce/backend/seeders"
 	"github.com/joho/godotenv"
 	"fmt"
 	"log"
@@ -11,7 +10,7 @@ import (
 
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Overload(); err != nil {
 		fmt.Println("Info: Tidak bisa load file .env, membaca dari OS env")
 	}
 	config.ConnectDB()
@@ -35,8 +34,7 @@ func main() {
 	}
 	fmt.Println("[DB] Semua tabel berhasil di-migrate")
 
-	seeders.RunSeeder()
 	config.InitOAuthConfig()
 	router := routers.SetupRouter()
 	router.Run(":8080")
-}
+}

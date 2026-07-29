@@ -54,6 +54,7 @@ func SetupRouter() *gin.Engine {
     orderGroup.POST("/order", handlers.CheckoutCart)
     orderGroup.GET("/order/me", handlers.GetMyOrders)
     orderGroup.POST("/order/qris", handlers.CreateQRISPayment)
+    orderGroup.POST("/order/bank-transfer", handlers.CreateBankTransferPayment)
   }
 
   // Midtrans webhook — public (dipanggil Midtrans server)

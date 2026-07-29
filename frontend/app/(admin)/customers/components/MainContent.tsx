@@ -38,6 +38,9 @@ const MainContent = ({ refreshTrigger }: MainContentProps) => {
                 }
             })
             const response = await data.json()
+            console.log(response);
+console.log(response.data);
+
             setUsers(response.data || [])
         } catch (error) {
             console.log(error)
@@ -99,13 +102,15 @@ const MainContent = ({ refreshTrigger }: MainContentProps) => {
         }
     }
 
-    // Filter berdasarkan search (nama atau email)
-    const filtered = users.filter(item =>
+   // Filter berdasarkan search (nama atau email)
+    const filtered = Array.isArray(users)
+    ? users.filter(item =>
         item.name?.toLowerCase().includes(search.toLowerCase()) ||
         item.email?.toLowerCase().includes(search.toLowerCase()) ||
         item.phone?.toLowerCase().includes(search.toLowerCase())
-    )
-
+      )
+    : [];
+    
     const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
     const totalPages = Math.ceil(filtered.length / itemsPerPage)
 

@@ -4,11 +4,11 @@ import { Truck, ShoppingBag, Package, CreditCard, ChevronRight } from "lucide-re
 import { useRouter } from "next/navigation"
 
 interface OrderItem {
-    id: number;
-    product_id: number;
-    quantity: number;
-    price: number;
-    subtotal: number;
+    ID: number;
+    ProductID: number;
+    Quantity: number;
+    Price: number;
+    Subtotal: number;
     Product?: {
         name: string;
         images?: string[];
@@ -89,129 +89,131 @@ const MainDetails = () => {
         );
     }
 
-    const subtotal = order.TotalPrice - 12; // Reversing shipping fee for display
+    const SHIPPING_FEE = 12000;
+    const subtotal = order.TotalPrice - SHIPPING_FEE;
+    const total = subtotal + SHIPPING_FEE;
 
     return (
-        <>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
-                <div className="md:col-span-8 space-y-stack-lg">
-                    <div className="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant">
-                        <div className="flex flex-wrap justify-between gap-stack-md border-b border-outline-variant pb-stack-md mb-stack-md">
-                            <div>
-                                <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Order Number</p>
-                                <p className="font-headline-sm text-headline-sm text-primary">#{order.OrderNumber || order.ID}</p>
+            <>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+                    <div className="md:col-span-8 space-y-stack-lg">
+                        <div className="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant">
+                            <div className="flex flex-wrap justify-between gap-stack-md border-b border-outline-variant pb-stack-md mb-stack-md">
+                                <div>
+                                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Order Number</p>
+                                    <p className="font-headline-sm text-headline-sm text-primary">#{order.OrderNumber || order.ID}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Order Date</p>
+                                    <p className="font-body-md text-body-md text-primary">
+                                        {new Date(order.CreatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="text-right">
-                                <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Order Date</p>
-                                <p className="font-body-md text-body-md text-primary">
-                                    {new Date(order.CreatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                            <div className="space-y-stack-md">
+                                <p className="font-label-md text-label-md text-primary font-bold mb-stack-md">Items in your order</p>
+
+                                {order.OrderItems?.map((item) => {
+                                    const productName = item.Product?.name || "Product";
+                                    const productImage = item.Product?.ProductsVariants?.find(v => v.image)?.image || null;
+                                    const color = item.Product?.ProductsVariants?.[0]?.color || "Default";
+
+                                    return (
+                                        <div key={item.ID} className="flex gap-stack-md">
+                                            <div className="w-24 h-24 rounded-lg bg-surface-container-high flex-shrink-0 overflow-hidden">
+                                                {productImage ? (
+                                                    <img className="w-full h-full object-cover" src={"http://localhost:8080" + productImage} alt={productName} />
+                                                ) : (
+                                                    <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-xs text-on-surface-variant">No Image</div>
+                                                )}
+                                            </div>
+                                            <div className="flex-grow flex flex-col justify-center">
+                                                <div className="flex justify-between items-start">
+                                                    <h3 className="font-headline-sm text-headline-sm text-primary">{productName}</h3>
+                                                    <p className="font-label-md text-label-md text-primary">Rp.{(item.Price * item.Quantity).toLocaleString("id-ID")}</p>
+                                                </div>
+                                                <p className="font-body-sm text-body-sm text-on-surface-variant capitalize">{color}</p>
+                                                <p className="font-label-sm text-label-sm text-secondary mt-1">Qty: {item.Quantity}</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+                            <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant">
+                                <h4 className="font-label-md text-label-md text-primary font-bold mb-stack-md flex items-center gap-2">
+                                    <Truck size={18} />
+                                    Shipping Address
+                                </h4>
+                                <address className="not-italic font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                    {profile?.name || "Guest User"}<br />
+                                    {profile?.address ? (
+                                        <span dangerouslySetInnerHTML={{ __html: profile.address.replace(/\n/g, "<br />") }} />
+                                    ) : (
+                                        <span>No address provided</span>
+                                    )}
+                                </address>
+                            </div>
+                            <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant">
+                                <h4 className="font-label-md text-label-md text-primary font-bold mb-stack-md flex items-center gap-2">
+                                    <Package size={18} />
+                                    Payment Method
+                                </h4>
+                                <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 capitalize">
+                                    <CreditCard size={20} />
+                                    {order.PaymentMethod.replace("_", " ")}
+                                </p>
+                                <p className="font-body-sm text-body-sm text-on-surface-variant mt-2 capitalize flex items-center gap-1">
+                                    Status:
+                                    <span className={
+                                        order.PaymentStatus === "paid" ? "text-green-600 font-bold" :
+                                            order.PaymentStatus === "failed" ? "text-red-600 font-bold" :
+                                                "text-yellow-600 font-bold"
+                                    }>
+                                        {order.PaymentStatus}
+                                    </span>
                                 </p>
                             </div>
                         </div>
-                        <div className="space-y-stack-md">
-                            <p className="font-label-md text-label-md text-primary font-bold mb-stack-md">Items in your order</p>
-                            
-                            {order.OrderItems?.map((item) => {
-                                const productName = item.Product?.name || "Product";
-                                const productImage = item.Product?.ProductsVariants?.find(v => v.image)?.image || null;
-                                const color = item.Product?.ProductsVariants?.[0]?.color || "Default";
-                                
-                                return (
-                                    <div key={item.id} className="flex gap-stack-md">
-                                        <div className="w-24 h-24 rounded-lg bg-surface-container-high flex-shrink-0 overflow-hidden">
-                                            {productImage ? (
-                                                <img className="w-full h-full object-cover" src={productImage} alt={productName} />
-                                            ) : (
-                                                <div className="w-full h-full bg-surface-container-high flex items-center justify-center text-xs text-on-surface-variant">No Image</div>
-                                            )}
-                                        </div>
-                                        <div className="flex-grow flex flex-col justify-center">
-                                            <div className="flex justify-between items-start">
-                                                <h3 className="font-headline-sm text-headline-sm text-primary">{productName}</h3>
-                                                <p className="font-label-md text-label-md text-primary">${item.price?.toFixed(2)}</p>
-                                            </div>
-                                            <p className="font-body-sm text-body-sm text-on-surface-variant capitalize">{color}</p>
-                                            <p className="font-label-sm text-label-sm text-secondary mt-1">Qty: {item.quantity}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
-                        <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant">
-                            <h4 className="font-label-md text-label-md text-primary font-bold mb-stack-md flex items-center gap-2">
-                                <Truck size={18} />
-                                Shipping Address
-                            </h4>
-                            <address className="not-italic font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                                {profile?.name || "Guest User"}<br />
-                                {profile?.address ? (
-                                    <span dangerouslySetInnerHTML={{ __html: profile.address.replace(/\n/g, "<br />") }} />
-                                ) : (
-                                    <span>No address provided</span>
-                                )}
-                            </address>
-                        </div>
-                        <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant">
-                            <h4 className="font-label-md text-label-md text-primary font-bold mb-stack-md flex items-center gap-2">
-                                <Package size={18} />
-                                Payment Method
-                            </h4>
-                            <p className="font-body-md text-body-md text-on-surface-variant flex items-center gap-2 capitalize">
-                                <CreditCard size={20} />
-                                {order.PaymentMethod.replace("_", " ")}
-                            </p>
-                            <p className="font-body-sm text-body-sm text-on-surface-variant mt-2 capitalize flex items-center gap-1">
-                                Status: 
-                                <span className={
-                                    order.PaymentStatus === "paid" ? "text-green-600 font-bold" : 
-                                    order.PaymentStatus === "failed" ? "text-red-600 font-bold" : 
-                                    "text-yellow-600 font-bold"
-                                }>
-                                    {order.PaymentStatus}
-                                </span>
-                            </p>
+                    <div className="md:col-span-4 space-y-stack-md">
+                        <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant sticky top-24">
+                            <h3 className="font-headline-sm text-headline-sm text-primary mb-stack-md">Order Summary</h3>
+                            <div className="space-y-stack-sm mb-stack-lg">
+                                <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
+                                    <span>Subtotal</span>
+                                    <span> Rp.{subtotal.toLocaleString("id-ID")}</span>
+                                </div>
+                                <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
+                                    <span>Shipping</span>
+                                    <span> Rp.{SHIPPING_FEE.toLocaleString("id-ID")}</span>
+                                </div>
+                                <div className="pt-stack-sm mt-stack-sm border-t border-outline-variant flex justify-between font-headline-md text-headline-md text-primary">
+                                    <span>Total</span>
+                                    <span>{(order.TotalPrice).toLocaleString("id-ID")}</span>
+                                </div>
+                            </div>
+                            <div className="space-y-stack-sm">
+                                <button onClick={() => router.push("/profile")} className="w-full bg-primary text-on-primary py-stack-md rounded-lg font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2">
+                                    <Truck size={20} />
+                                    Track Order
+                                </button>
+                                <button onClick={() => router.push("/collections")} className="w-full bg-surface text-primary border border-primary py-stack-md rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all flex items-center justify-center gap-2">
+                                    <ShoppingBag size={20} />
+                                    Continue Shopping
+                                </button>
+                            </div>
+                            <div className="mt-stack-lg pt-stack-lg border-t border-outline-variant">
+                                <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
+                                    Need help with your order?<br />
+                                    <a className="text-primary font-semibold underline decoration-primary/30" href="#">Contact Support</a>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="md:col-span-4 space-y-stack-md">
-                    <div className="bg-surface-container-lowest p-stack-lg rounded-xl border border-outline-variant sticky top-24">
-                        <h3 className="font-headline-sm text-headline-sm text-primary mb-stack-md">Order Summary</h3>
-                        <div className="space-y-stack-sm mb-stack-lg">
-                            <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
-                                <span>Subtotal</span>
-                                <span>${subtotal.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between font-body-md text-body-md text-on-surface-variant">
-                                <span>Shipping</span>
-                                <span>$12.00</span>
-                            </div>
-                            <div className="pt-stack-sm mt-stack-sm border-t border-outline-variant flex justify-between font-headline-md text-headline-md text-primary">
-                                <span>Total</span>
-                                <span>${order.TotalPrice.toFixed(2)}</span>
-                            </div>
-                        </div>
-                        <div className="space-y-stack-sm">
-                            <button onClick={() => router.push("/profile")} className="w-full bg-primary text-on-primary py-stack-md rounded-lg font-label-md text-label-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2">
-                                <Truck size={20} />
-                                Track Order
-                            </button>
-                            <button onClick={() => router.push("/collections")} className="w-full bg-surface text-primary border border-primary py-stack-md rounded-lg font-label-md text-label-md hover:bg-surface-container transition-all flex items-center justify-center gap-2">
-                                <ShoppingBag size={20} />
-                                Continue Shopping
-                            </button>
-                        </div>
-                        <div className="mt-stack-lg pt-stack-lg border-t border-outline-variant">
-                            <p className="font-body-sm text-body-sm text-on-surface-variant text-center">
-                                Need help with your order?<br />
-                                <a className="text-primary font-semibold underline decoration-primary/30" href="#">Contact Support</a>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    )
+            </>
+        )
 }
 export default MainDetails

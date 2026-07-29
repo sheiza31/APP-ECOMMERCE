@@ -1,6 +1,6 @@
 "use client"
 import { useRegisterContext } from "../context/RegisterContext";
-import { Eye, EyeClosed } from "lucide-react";
+import { Eye, EyeClosed,CircleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -10,6 +10,7 @@ const FormRegister = () => {
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [errors, setErrors] = useState("")
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -23,6 +24,8 @@ const FormRegister = () => {
         const json = await response.json();
         if (json.status === 201) {
             router.push("/")
+        } else if (json.status === 400 || json.status === 404 || json.status === 500 || json.status === 422) {
+            setErrors(json.message)
         }
 
     }
@@ -49,18 +52,30 @@ const FormRegister = () => {
                             <input
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full h-12 px-4 bg-surface border border-outline-variant rounded-lg font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 placeholder:text-outline" id="name" placeholder="John Doe" type="text" />
+                                className="w-full h-12 px-4 border border-outline-variant rounded-lg font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 placeholder:text-outline" id="name" placeholder="John Doe" type="text" />
                         </div>
                         <div>
                             <label className="block font-label-md text-label-md text-on-surface mb-2" htmlFor="email">Email</label>
                             <input
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full h-12 px-4 bg-surface border border-outline-variant rounded-lg font-body-md text-on-surface focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 placeholder:text-outline"
-                                id="email"
-                                placeholder="nama@email.com"
-                                type="email"
+                                className={`
+                                w-full h-12 rounded-xl border px-4 outline-none transition-all
+                                  ${errors
+                                        ? "border-red-500 focus:ring-2 focus:ring-red-300"
+                                        : "border-gray-300 focus:black focus:ring-2 focus:ring-black-300"
+                                    }
+                                `}
+                                type="email"placeholder="contoh@gmail.com"
                             />
+
+                            {errors && (
+                                <p className="mt-2 flex items-center gap-1 text-sm text-red-600">
+                                    <CircleAlert size={16} />
+                                    {errors}
+                                </p>
+                            )}
+
                         </div>
                         <div>
                             <label className="block font-label-md text-label-md text-on-surface mb-2" htmlFor="password">Kata Sandi</label>
@@ -77,6 +92,7 @@ const FormRegister = () => {
                                 </button>
                             </div>
                             <p className="mt-2 font-label-sm text-label-sm text-secondary">Minimal 8 karakter.</p>
+                            {errors}
                         </div>
                         <div className="flex items-center space-x-3">
                             <input

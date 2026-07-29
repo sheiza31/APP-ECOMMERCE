@@ -9,7 +9,7 @@ export default async function CategoriesLayout({children}: {children: React.Reac
             <title>Customers</title>
 
         </head>
-        <body className="bg-surface text-on-surface">
+        <body className="bg-surface text-on-surface"suppressHydrationWarning>
             <AsideBar />
             <React.Suspense fallback={<div>Loading header...</div>}>
                 <Header />

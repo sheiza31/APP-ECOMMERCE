@@ -41,7 +41,7 @@ func Register(c *gin.Context) {
 	}
 
 	if err := config.DB.Create(&user).Error; err != nil {
-		response.ErrorJSON(c, http.StatusBadRequest, "Gagal membuat user atau email sudah terdaftar", err)
+		response.ErrorJSON(c, http.StatusBadRequest, "Email sudah terdaftar", err)
 		return
 	}
 
