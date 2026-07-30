@@ -1,5 +1,5 @@
 "use client"
-import { ArrowLeft, CreditCard, Landmark, Wallet, Building2, Smartphone, QrCode, Clock, CheckCircle2,Verified } from "lucide-react"
+import { ArrowLeft, CreditCard, Landmark, Wallet, Building2, Smartphone, QrCode, Clock, CheckCircle2, Verified, AlertTriangle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useCart } from "../../../context/CartContext"
@@ -39,6 +39,22 @@ const FormPayment = () => {
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check if any cart item has 0 stock
+        const outOfStockItem = cart.find(item => (item.stock ?? 0) <= 0);
+        if (outOfStockItem) {
+            const Swal = (await import("sweetalert2")).default;
+            Swal.fire({
+                icon: "error",
+                title: "Stok Tidak Cukup",
+                text: `Maaf, produk "${outOfStockItem.name}" sedang kehabisan stok!`,
+            });
+            return;
+        }
+
+        const shippingInfoStr = localStorage.getItem("shipping_info");
+        const shippingInfo = shippingInfoStr ? JSON.parse(shippingInfoStr) : {};
+
         setLoading(true);
 
         // For QRIS, call the dedicated endpoint
@@ -50,7 +66,11 @@ const FormPayment = () => {
                     headers: {
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${token}`
-                    }
+                    },
+                    body: JSON.stringify({
+                        shipping_address: localStorage.getItem("shipping_address") || "",
+                        ...shippingInfo
+                    })
                 });
                 if (res.ok) {
                     const json = await res.json();
@@ -78,7 +98,11 @@ const FormPayment = () => {
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${token}`
                     },
-                    body: JSON.stringify({ bank: selectedBank })
+                    body: JSON.stringify({ 
+                        bank: selectedBank,
+                        shipping_address: localStorage.getItem("shipping_address") || "",
+                        ...shippingInfo
+                    })
                 });
                 if (res.ok) {
                     const json = await res.json();
@@ -107,7 +131,9 @@ const FormPayment = () => {
                 body: JSON.stringify({
                     payment_method: paymentMethod,
                     items: cart,
-                    total_amount: totalPrice + 12000
+                    total_amount: totalPrice + 12000,
+                    shipping_address: localStorage.getItem("shipping_address") || "",
+                    ...shippingInfo
                 })
             });
             await response.json();
@@ -351,7 +377,11 @@ const FormPayment = () => {
                             <span className="material-symbols-outlined"><ArrowLeft /></span>
                             Back to Shipping
                         </button>
-                        <button onClick={handlePlaceOrder} disabled={loading} className="md:hidden w-full max-w-[200px] bg-primary text-white py-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-all active:scale-95 disabled:opacity-50">
+                        <button 
+                            onClick={handlePlaceOrder} 
+                            disabled={loading || cart.some(item => (item.stock ?? 0) <= 0)} 
+                            className="md:hidden w-full max-w-[200px] bg-primary text-white py-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-all active:scale-95 disabled:opacity-50"
+                        >
                             {loading ? "Processing..." : "Place Order"}
                         </button>
                     </div>
@@ -361,6 +391,12 @@ const FormPayment = () => {
                     <aside className="sticky top-24 space-y-stack-md">
                         <div className="bg-surface-container-lowest p-stack-lg rounded-xl custom-shadow border border-surface-container-high">
                             <h3 className="font-headline-sm text-headline-sm text-primary mb-stack-lg">Order Summary</h3>
+                            {cart.some(item => (item.stock ?? 0) <= 0) && (
+                                <div className="mb-stack-md p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-semibold flex items-center gap-2">
+                                    <AlertTriangle size={16} className="shrink-0" />
+                                    <span>Beberapa item kehabisan stok! Harap hapus item tersebut untuk melanjutkan.</span>
+                                </div>
+                            )}
                             <div className="space-y-stack-md mb-stack-lg max-h-96 overflow-y-auto pr-2">
                                 {cart.map((item) => (
                                     <div key={item.id} className="flex gap-stack-md">
@@ -373,11 +409,20 @@ const FormPayment = () => {
                                         </div>
                                         <div className="flex-grow">
                                             <div className="flex justify-between">
-                                                <h4 className="font-label-md text-label-md text-primary">{item.name}</h4>
+                                                <h4 className={`font-label-md text-label-md ${item.stock && item.stock <= 0 ? "text-red-600 font-semibold" : "text-primary"}`}>
+                                                    {item.name}
+                                                </h4>
                                                 <span className="font-body-md text-body-md text-primary">Rp.{(item.price * item.quantity).toFixed(2)}</span>
                                             </div>
                                             {item.color && <p className="font-body-sm text-body-sm text-on-surface-variant capitalize">{item.color}</p>}
-                                            <p className="font-label-sm text-label-sm text-on-surface-variant mt-2">Qty: {item.quantity}</p>
+                                            <div className="flex justify-between items-center mt-2">
+                                                <p className="font-label-sm text-label-sm text-on-surface-variant">Qty: {item.quantity}</p>
+                                                {(item.stock ?? 0) <= 0 && (
+                                                    <span className="text-red-600 text-[10px] font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                                                        Habis!
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -405,7 +450,11 @@ const FormPayment = () => {
                                     <p className="font-label-sm text-label-sm text-on-surface-variant uppercase">RUPIAH</p>
                                 </div>
                             </div>
-                            <button onClick={handlePlaceOrder} disabled={loading} className="w-full bg-primary text-white py-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50">
+                            <button 
+                                onClick={handlePlaceOrder} 
+                                disabled={loading || cart.some(item => (item.stock ?? 0) <= 0)} 
+                                className="w-full bg-primary text-white py-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 disabled:opacity-50"
+                            >
                                 {loading ? "Processing..." : "Place Order"}
                             </button>
                             <div className="mt-stack-md flex items-center justify-center gap-2 text-on-surface-variant">

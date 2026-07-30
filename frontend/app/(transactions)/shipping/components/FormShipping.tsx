@@ -1,40 +1,68 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import { useCart } from "../../../context/CartContext";
 import Link from "next/link";
 
 const FormShipping = () => {
     const { cart, totalPrice, removeFromCart } = useCart();
+    const router = useRouter();
     const [fullname, setFullName] = useState<string>("");
     const [address, setAddress] = useState<string>("");
     const [city, setCity] = useState<string>("");
     const [postalCode, setPostalCode] = useState<string>("");
     const [phoneNumber, setPhoneNumber] = useState<string>("");
-    const router = useRouter();
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const token = localStorage.getItem("token");
 
-        const res = await fetch("http://localhost:8080/api/v1/transaction/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                cart,
-                shippingInfo: {
-                    fullname,
-                    address,
-                    city,
-                    postalCode,
-                    phoneNumber
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            try {
+                const res = await fetch("http://localhost:8080/api/v1/auth/me", {
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+                if (res.ok) {
+                    const json = await res.json();
+                    if (json.data) {
+                        if (json.data.name) setFullName(json.data.name);
+                        if (json.data.address) setAddress(json.data.address);
+                        if (json.data.phone) setPhoneNumber(json.data.phone);
+                    }
                 }
-            })
-        });
-    }
+            } catch (error) {
+                console.error("Error fetching user profile:", error);
+            }
+        };
+        fetchUserProfile();
+    }, []);
+    
+    const handleContinueToPayment = () => {
+        const parts = [];
+        if (fullname) parts.push(fullname);
+        if (address) parts.push(address);
+        if (city) parts.push(city);
+        if (postalCode) parts.push(postalCode);
+        if (phoneNumber) parts.push(`No. HP: ${phoneNumber}`);
+
+        if (parts.length > 0) {
+            const formattedAddress = parts.join(", ");
+            localStorage.setItem("shipping_address", formattedAddress);
+            localStorage.setItem("shipping_info", JSON.stringify({
+                fullname,
+                address,
+                city,
+                postal_code: postalCode,
+                phone: phoneNumber
+            }));
+        } else {
+            localStorage.removeItem("shipping_address");
+            localStorage.removeItem("shipping_info");
+        }
+        router.push('/payments');
+    };
 
     return (
         <>
@@ -44,7 +72,7 @@ const FormShipping = () => {
                 <section className="lg:col-span-7 space-y-stack-lg">
                     <div className="bg-surface-container-lowest p-stack-lg rounded-xl shadow-sm border border-outline-variant/30">
                         <h2 className="font-headline-md text-headline-md text-primary mb-stack-lg">Shipping Information</h2>
-                        <form onSubmit={handleSubmit} className="space-y-stack-md">
+                        <form onSubmit={handleContinueToPayment} className="space-y-stack-md">
                             <div className="grid grid-cols-1 gap-stack-md">
                                 <div>
                                     <label className="block font-label-md text-label-md text-secondary mb-2" htmlFor="full-name">Full Name</label>
@@ -82,7 +110,7 @@ const FormShipping = () => {
                         </form>
                     </div>
                     <div className="flex justify-end pt-stack-md">
-                        <button onClick={() => { router.push('/payments') }} className="bg-primary cursor-pointer text-on-primary px-stack-lg py-4 rounded-lg font-label-md text-label-md hover:bg-primary/90 active:scale-95 transition-all shadow-md w-full md:w-auto">
+                        <button onClick={handleContinueToPayment} className="bg-primary cursor-pointer text-on-primary px-stack-lg py-4 rounded-lg font-label-md text-label-md hover:bg-primary/90 active:scale-95 transition-all shadow-md w-full md:w-auto">
                             Continue to Payment
                         </button>
                     </div>

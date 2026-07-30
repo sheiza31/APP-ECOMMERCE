@@ -21,6 +21,16 @@ func CreateQRISPayment(c *gin.Context) {
 		return
 	}
 
+	var req struct {
+		ShippingAddress string `json:"shipping_address"`
+		Fullname        string `json:"fullname"`
+		Address         string `json:"address"`
+		City            string `json:"city"`
+		PostalCode      string `json:"postal_code"`
+		Phone           string `json:"phone"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
 	// Get active cart
 	var cart models.Cart
 	if err := config.DB.Preload("CartItems.Product").Where("user_id = ? AND status = 'active'", userID).First(&cart).Error; err != nil {
@@ -34,13 +44,14 @@ func CreateQRISPayment(c *gin.Context) {
 
 	// Validate Stock for all items before creating QRIS request
 	for _, item := range cart.CartItems {
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			if product.Stock < item.Quantity {
-				errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, product.Stock)
-				response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
-				return
-			}
+		var totalStock int
+		config.DB.Model(&models.ProductVariant{}).Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Select("COALESCE(SUM(stock), 0)").Scan(&totalStock)
+		if totalStock < item.Quantity {
+			var product models.Product
+			config.DB.First(&product, item.ProductID)
+			errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, totalStock)
+			response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
+			return
 		}
 	}
 
@@ -49,6 +60,39 @@ func CreateQRISPayment(c *gin.Context) {
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		response.ErrorJSON(c, http.StatusNotFound, "User not found", err)
 		return
+	}
+
+	// Build shipping address: prefer form data, fallback to user profile, always non-empty
+	shippingAddress := req.ShippingAddress
+	if shippingAddress == "" && (req.Fullname != "" || req.Address != "" || req.City != "" || req.Phone != "") {
+		parts := []string{}
+		if req.Fullname != "" { parts = append(parts, req.Fullname) }
+		if req.Address != "" { parts = append(parts, req.Address) }
+		if req.City != "" { parts = append(parts, req.City) }
+		if req.PostalCode != "" { parts = append(parts, req.PostalCode) }
+		if req.Phone != "" { parts = append(parts, "HP: "+req.Phone) }
+		shippingAddress = strings.Join(parts, ", ")
+	}
+	if shippingAddress == "" && user.Address != "" {
+		shippingAddress = user.Name + ", " + user.Address
+		if user.Phone != "" {
+			shippingAddress += ", HP: " + user.Phone
+		}
+	}
+	if shippingAddress == "" {
+		shippingAddress = user.Name + " (" + user.Email + ")"
+	}
+
+	// Resolve phone: prefer shipping form, fallback to user profile
+	custPhone := req.Phone
+	if custPhone == "" {
+		custPhone = user.Phone
+	}
+
+	// Resolve name: prefer shipping form, fallback to user profile
+	custName := req.Fullname
+	if custName == "" {
+		custName = user.Name
 	}
 
 	// Setup Midtrans client
@@ -99,9 +143,17 @@ func CreateQRISPayment(c *gin.Context) {
 		},
 		Items: &itemDetails,
 		CustomerDetails: &midtrans.CustomerDetails{
-			FName: user.Name,
+			FName: custName,
 			Email: user.Email,
-			Phone: user.Phone,
+			Phone: custPhone,
+			ShipAddr: &midtrans.CustomerAddress{
+				FName:      custName,
+				Phone:      custPhone,
+				Address:    req.Address,
+				City:       req.City,
+				Postcode:   req.PostalCode,
+				CountryCode: "IDN",
+			},
 		},
 		Qris: &coreapi.QrisDetails{
 			Acquirer: "gopay",
@@ -116,12 +168,13 @@ func CreateQRISPayment(c *gin.Context) {
 
 	// Save order in DB
 	order := models.Order{
-		UserID:        userID.(uint),
-		OrderNumber:   orderNumber,
-		TotalPrice:    cart.TotalPrice + 12000,
-		PaymentMethod: "qris",
-		PaymentStatus: "pending",
-		OrderStatus:   "pending",
+		UserID:          userID.(uint),
+		OrderNumber:     orderNumber,
+		TotalPrice:      cart.TotalPrice + 12000,
+		PaymentMethod:   "qris",
+		PaymentStatus:   "pending",
+		OrderStatus:     "pending",
+		ShippingAddress: shippingAddress,
 	}
 	config.DB.Create(&order)
 
@@ -136,14 +189,23 @@ func CreateQRISPayment(c *gin.Context) {
 		}
 		config.DB.Create(&orderItem)
 
-		// Decrement Product Stock
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			product.Stock -= item.Quantity
-			if product.Stock < 0 {
-				product.Stock = 0
+		// Decrement ProductVariant Stock
+		var variants []models.ProductVariant
+		if err := config.DB.Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Order("stock DESC").Find(&variants).Error; err == nil && len(variants) > 0 {
+			remainingQty := item.Quantity
+			for i := range variants {
+				if remainingQty <= 0 {
+					break
+				}
+				if variants[i].Stock >= remainingQty {
+					variants[i].Stock -= remainingQty
+					remainingQty = 0
+				} else {
+					remainingQty -= variants[i].Stock
+					variants[i].Stock = 0
+				}
+				config.DB.Save(&variants[i])
 			}
-			config.DB.Save(&product)
 		}
 	}
 
@@ -243,9 +305,15 @@ func CreateBankTransferPayment(c *gin.Context) {
 		return
 	}
 
-	// Parse bank parameter
+	// Parse parameters
 	var req struct {
-		Bank string `json:"bank" binding:"required"`
+		Bank            string `json:"bank" binding:"required"`
+		ShippingAddress string `json:"shipping_address"`
+		Fullname        string `json:"fullname"`
+		Address         string `json:"address"`
+		City            string `json:"city"`
+		PostalCode      string `json:"postal_code"`
+		Phone           string `json:"phone"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ErrorJSON(c, http.StatusBadRequest, "Bank parameter is required", err)
@@ -266,13 +334,14 @@ func CreateBankTransferPayment(c *gin.Context) {
 
 	// Validate Stock for all items before creating request
 	for _, item := range cart.CartItems {
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			if product.Stock < item.Quantity {
-				errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, product.Stock)
-				response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
-				return
-			}
+		var totalStock int
+		config.DB.Model(&models.ProductVariant{}).Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Select("COALESCE(SUM(stock), 0)").Scan(&totalStock)
+		if totalStock < item.Quantity {
+			var product models.Product
+			config.DB.First(&product, item.ProductID)
+			errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, totalStock)
+			response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
+			return
 		}
 	}
 
@@ -281,6 +350,39 @@ func CreateBankTransferPayment(c *gin.Context) {
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		response.ErrorJSON(c, http.StatusNotFound, "User not found", err)
 		return
+	}
+
+	// Build shipping address: prefer form data, fallback to user profile, always non-empty
+	shippingAddress := req.ShippingAddress
+	if shippingAddress == "" && (req.Fullname != "" || req.Address != "" || req.City != "" || req.Phone != "") {
+		parts := []string{}
+		if req.Fullname != "" { parts = append(parts, req.Fullname) }
+		if req.Address != "" { parts = append(parts, req.Address) }
+		if req.City != "" { parts = append(parts, req.City) }
+		if req.PostalCode != "" { parts = append(parts, req.PostalCode) }
+		if req.Phone != "" { parts = append(parts, "HP: "+req.Phone) }
+		shippingAddress = strings.Join(parts, ", ")
+	}
+	if shippingAddress == "" && user.Address != "" {
+		shippingAddress = user.Name + ", " + user.Address
+		if user.Phone != "" {
+			shippingAddress += ", HP: " + user.Phone
+		}
+	}
+	if shippingAddress == "" {
+		shippingAddress = user.Name + " (" + user.Email + ")"
+	}
+
+	// Resolve phone: prefer shipping form, fallback to user profile
+	custPhone := req.Phone
+	if custPhone == "" {
+		custPhone = user.Phone
+	}
+
+	// Resolve name: prefer shipping form, fallback to user profile
+	custName := req.Fullname
+	if custName == "" {
+		custName = user.Name
 	}
 
 	// Setup Midtrans client
@@ -330,9 +432,17 @@ func CreateBankTransferPayment(c *gin.Context) {
 		},
 		Items: &itemDetails,
 		CustomerDetails: &midtrans.CustomerDetails{
-			FName: user.Name,
+			FName: custName,
 			Email: user.Email,
-			Phone: user.Phone,
+			Phone: custPhone,
+			ShipAddr: &midtrans.CustomerAddress{
+				FName:      custName,
+				Phone:      custPhone,
+				Address:    req.Address,
+				City:       req.City,
+				Postcode:   req.PostalCode,
+				CountryCode: "IDN",
+			},
 		},
 	}
 
@@ -360,12 +470,13 @@ func CreateBankTransferPayment(c *gin.Context) {
 
 	// Save order in DB
 	order := models.Order{
-		UserID:        userID.(uint),
-		OrderNumber:   orderNumber,
-		TotalPrice:    cart.TotalPrice + 12000,
-		PaymentMethod: "bank_transfer",
-		PaymentStatus: "pending",
-		OrderStatus:   "pending",
+		UserID:          userID.(uint),
+		OrderNumber:     orderNumber,
+		TotalPrice:      cart.TotalPrice + 12000,
+		PaymentMethod:   "bank_transfer",
+		PaymentStatus:   "pending",
+		OrderStatus:     "pending",
+		ShippingAddress: shippingAddress,
 	}
 	config.DB.Create(&order)
 
@@ -380,14 +491,23 @@ func CreateBankTransferPayment(c *gin.Context) {
 		}
 		config.DB.Create(&orderItem)
 
-		// Decrement Product Stock
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			product.Stock -= item.Quantity
-			if product.Stock < 0 {
-				product.Stock = 0
+		// Decrement ProductVariant Stock
+		var variants []models.ProductVariant
+		if err := config.DB.Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Order("stock DESC").Find(&variants).Error; err == nil && len(variants) > 0 {
+			remainingQty := item.Quantity
+			for i := range variants {
+				if remainingQty <= 0 {
+					break
+				}
+				if variants[i].Stock >= remainingQty {
+					variants[i].Stock -= remainingQty
+					remainingQty = 0
+				} else {
+					remainingQty -= variants[i].Stock
+					variants[i].Stock = 0
+				}
+				config.DB.Save(&variants[i])
 			}
-			config.DB.Save(&product)
 		}
 	}
 

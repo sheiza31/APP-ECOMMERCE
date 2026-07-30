@@ -35,9 +35,9 @@ const OAuthTokenHandler = () => {
 
             // Redirect sesuai role
             if (role === "admin") {
-                router.replace("/dashboard");
+                window.location.href = "/dashboard";
             } else {
-                router.replace("/shop");
+                window.location.href = "/shop";
             }
         }
     }, [searchParams, router])

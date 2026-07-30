@@ -1,4 +1,5 @@
 "use client"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, Heart, Package } from "lucide-react"
 import { useFilter } from "../context/FilterContext"
@@ -58,6 +59,8 @@ const COLOR_HEX: Record<string, string> = {
 }
 
 const Product = () => {
+    const searchParams = useSearchParams()
+    const search = searchParams.get("search")
     const { selectedColors, selectedCategoryIDs, sortOrder } = useFilter()
     const { addToCart } = useCart()
     const [products, setProducts] = useState<Product[]>([])
@@ -74,7 +77,7 @@ const Product = () => {
                 title: "Maaf",
                 text: `Stok produk "${product.name}" sedang tidak tersedia`,
             })
-            
+
             return
         }
 
@@ -97,6 +100,9 @@ const Product = () => {
             setCurrentPage(1)
             try {
                 const params = new URLSearchParams()
+                if (search) {
+                    params.set("search", search)
+                }
 
                 // Category filter — send first selected category (API supports single category_id)
                 if (selectedCategoryIDs.length > 0) {
@@ -145,7 +151,7 @@ const Product = () => {
         }
 
         fetchProducts()
-    }, [selectedColors, selectedCategoryIDs, sortOrder])
+    }, [search, selectedColors, selectedCategoryIDs, sortOrder])
 
     const totalPages = Math.max(1, Math.ceil(products.length / ITEMS_PER_PAGE))
     const paginated = products.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
@@ -180,7 +186,9 @@ const Product = () => {
                 <Package className="text-outline-variant mb-4" size={64} strokeWidth={1} />
                 <h3 className="font-headline-sm text-headline-sm text-primary mb-2">No products found</h3>
                 <p className="font-body-md text-body-md text-secondary max-w-xs">
-                    Coba ubah filter atau hapus beberapa filter untuk melihat lebih banyak produk.
+                    {search
+                        ? `Tidak ada produk yang cocok dengan "${search}". Coba kata kunci lain.`
+                        : "Coba ubah filter atau hapus beberapa filter untuk melihat lebih banyak produk."}
                 </p>
             </div>
         )
@@ -252,15 +260,15 @@ const Product = () => {
                 </div>
 
                 <div className="mt-section-gap flex justify-center items-center gap-4">
-                    <button 
-                        onClick={() => goToPage(currentPage - 1)} 
+                    <button
+                        onClick={() => goToPage(currentPage - 1)}
                         disabled={currentPage === 1}
                         className={`w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg transition-all ${currentPage === 1 ? 'text-outline-variant cursor-not-allowed' : 'text-secondary hover:text-primary hover:border-primary'}`}>
                         <span className="material-symbols-outlined"><ChevronLeft /></span>
                     </button>
-                    
+
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button 
+                        <button
                             key={page}
                             onClick={() => goToPage(page)}
                             className={`w-10 h-10 flex items-center justify-center rounded-lg font-label-md text-label-md transition-all ${page === currentPage ? 'bg-primary text-white' : 'border border-outline-variant text-secondary hover:text-primary hover:border-primary'}`}>
@@ -268,8 +276,8 @@ const Product = () => {
                         </button>
                     ))}
 
-                    <button 
-                        onClick={() => goToPage(currentPage + 1)} 
+                    <button
+                        onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
                         className={`w-10 h-10 flex items-center justify-center border border-outline-variant rounded-lg transition-all ${currentPage === totalPages ? 'text-outline-variant cursor-not-allowed' : 'text-secondary hover:text-primary hover:border-primary'}`}>
                         <span className="material-symbols-outlined"><ChevronRight /></span>

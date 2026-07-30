@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -70,16 +71,12 @@ func AddToCart(c *gin.Context) {
 		proposedQuantity += cartItem.Quantity
 	}
 
-	// Hitung total stock dari variant jika ada, jika tidak gunakan product.Stock
+	// Hitung total stock dari variant
 	var totalStock int
 	var variants []models.ProductVariant
-	config.DB.Where("product_id = ?", product.ID).Find(&variants)
-	if len(variants) > 0 {
-		for _, v := range variants {
-			totalStock += v.Stock
-		}
-	} else {
-		totalStock = product.Stock
+	config.DB.Where("product_id = ? AND deleted_at IS NULL", product.ID).Find(&variants)
+	for _, v := range variants {
+		totalStock += v.Stock
 	}
 
 	if totalStock < proposedQuantity {
@@ -162,11 +159,42 @@ func CheckoutCart(c *gin.Context) {
 
 	// Parse request to get payment method
 	var req struct {
-		PaymentMethod string `json:"payment_method"`
+		PaymentMethod   string `json:"payment_method"`
+		ShippingAddress string `json:"shipping_address"`
+		Fullname        string `json:"fullname"`
+		Address         string `json:"address"`
+		City            string `json:"city"`
+		PostalCode      string `json:"postal_code"`
+		Phone           string `json:"phone"`
 	}
 	c.ShouldBindJSON(&req)
 	if req.PaymentMethod == "" {
 		req.PaymentMethod = "credit_card" // default
+	}
+
+	// Fetch user info for address fallback
+	var user models.User
+	config.DB.First(&user, userID)
+
+	// Build shipping address: prefer form data, fallback to user profile, always non-empty
+	shippingAddress := req.ShippingAddress
+	if shippingAddress == "" && (req.Fullname != "" || req.Address != "" || req.City != "" || req.Phone != "") {
+		parts := []string{}
+		if req.Fullname != "" { parts = append(parts, req.Fullname) }
+		if req.Address != "" { parts = append(parts, req.Address) }
+		if req.City != "" { parts = append(parts, req.City) }
+		if req.PostalCode != "" { parts = append(parts, req.PostalCode) }
+		if req.Phone != "" { parts = append(parts, "HP: "+req.Phone) }
+		shippingAddress = strings.Join(parts, ", ")
+	}
+	if shippingAddress == "" && user.Address != "" {
+		shippingAddress = user.Name + ", " + user.Address
+		if user.Phone != "" {
+			shippingAddress += ", HP: " + user.Phone
+		}
+	}
+	if shippingAddress == "" {
+		shippingAddress = user.Name + " (" + user.Email + ")"
 	}
 
 	var cart models.Cart
@@ -181,24 +209,26 @@ func CheckoutCart(c *gin.Context) {
 
 	// Validate Stock for all items before checking out
 	for _, item := range cart.CartItems {
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			if product.Stock < item.Quantity {
-				errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, product.Stock)
-				response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
-				return
-			}
+		var totalStock int
+		config.DB.Model(&models.ProductVariant{}).Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Select("COALESCE(SUM(stock), 0)").Scan(&totalStock)
+		if totalStock < item.Quantity {
+			var product models.Product
+			config.DB.First(&product, item.ProductID)
+			errMsg := fmt.Sprintf("Stok tidak cukup untuk produk: %s (Sisa: %d)", product.Name, totalStock)
+			response.ErrorJSON(c, http.StatusBadRequest, errMsg, nil)
+			return
 		}
 	}
 
 	// Create Order
 	order := models.Order{
-		UserID:        userID.(uint),
-		OrderNumber:   fmt.Sprintf("LUMINA-%d-%d", userID, time.Now().Unix()),
-		TotalPrice:    cart.TotalPrice + 12,
-		PaymentMethod: req.PaymentMethod,
-		PaymentStatus: "paid", // simulate successful mock payment for standard methods
-		OrderStatus:   "processing",
+		UserID:          userID.(uint),
+		OrderNumber:     fmt.Sprintf("LUMINA-%d-%d", userID, time.Now().Unix()),
+		TotalPrice:      cart.TotalPrice + 12,
+		PaymentMethod:   req.PaymentMethod,
+		PaymentStatus:   "paid", // simulate successful mock payment for standard methods
+		OrderStatus:     "processing",
+		ShippingAddress: shippingAddress,
 	}
 	config.DB.Create(&order)
 
@@ -213,14 +243,23 @@ func CheckoutCart(c *gin.Context) {
 		}
 		config.DB.Create(&orderItem)
 
-		// Decrement Product Stock
-		var product models.Product
-		if err := config.DB.First(&product, item.ProductID).Error; err == nil {
-			product.Stock -= item.Quantity
-			if product.Stock < 0 {
-				product.Stock = 0
+		// Decrement ProductVariant Stock
+		var variants []models.ProductVariant
+		if err := config.DB.Where("product_id = ? AND deleted_at IS NULL", item.ProductID).Order("stock DESC").Find(&variants).Error; err == nil && len(variants) > 0 {
+			remainingQty := item.Quantity
+			for i := range variants {
+				if remainingQty <= 0 {
+					break
+				}
+				if variants[i].Stock >= remainingQty {
+					variants[i].Stock -= remainingQty
+					remainingQty = 0
+				} else {
+					remainingQty -= variants[i].Stock
+					variants[i].Stock = 0
+				}
+				config.DB.Save(&variants[i])
 			}
-			config.DB.Save(&product)
 		}
 	}
 

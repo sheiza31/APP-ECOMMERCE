@@ -1,8 +1,8 @@
 "use client"
 import Link from "next/link"
-import { Search, Menu, ShoppingBag, User, LogOut } from "lucide-react"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { Search, Menu, ShoppingBag, User, LogOut, X } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useCart } from "../../../context/CartContext"
 
 interface UserProfile {
@@ -15,10 +15,12 @@ interface UserProfile {
 
 const Header = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { totalQuantity } = useCart();
-    const [localInput, setLocalInput] = useState("");
+    const [localInput, setLocalInput] = useState(searchParams?.get("search") || "");
     const [openProfile, setOpenProfile] = useState(false);
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -39,8 +41,32 @@ const Header = () => {
         fetchProfile();
     }, []);
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault()
+    // Sync input with URL when navigating directly to /collections?search=...
+    useEffect(() => {
+        const keyword = searchParams?.get("search") || ""
+        setLocalInput(keyword)
+    }, [searchParams])
+
+    // Debounced live search — waits 500ms after user stops typing
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        debounceRef.current = setTimeout(() => {
+            const params = new URLSearchParams(searchParams?.toString() || "")
+            if (localInput.trim()) {
+                params.set("search", localInput.trim())
+            } else {
+                params.delete("search")
+            }
+            router.push("/collections?" + params.toString())
+        }, 500)
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [localInput])
+
+    const handleClearSearch = () => {
+        setLocalInput("")
     }
 
     const handleLogout = async () => {
@@ -80,12 +106,26 @@ const Header = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
-                        <form onSubmit={handleSearch} action="">
-                            <div className="hidden lg:flex items-center bg-surface-container px-4 py-2 rounded-full border border-outline-variant/30">
-                                <Search className="text-secondary mr-2" />
-                                <input value={localInput} onChange={(e) => setLocalInput(e.target.value)} className="bg-transparent border-none focus:ring-0 text-body-sm font-body-sm text-on-surface w-48" placeholder="Search collection..." type="text" />
-                            </div>
-                        </form>
+                        <div className="hidden lg:flex items-center bg-surface-container px-4 py-2 rounded-full border border-outline-variant/30 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/10 transition-all w-64">
+                            <Search className="text-secondary mr-2 shrink-0" size={16} />
+                            <input
+                                value={localInput}
+                                onChange={(e) => setLocalInput(e.target.value)}
+                                className="bg-transparent border-none focus:ring-0 text-body-sm font-body-sm text-on-surface flex-1 min-w-0 outline-none"
+                                placeholder="Search collection..."
+                                type="text"
+                            />
+                            {localInput && (
+                                <button
+                                    onClick={handleClearSearch}
+                                    className="ml-1 text-secondary hover:text-primary transition-colors shrink-0"
+                                    type="button"
+                                    aria-label="Clear search"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
                         <div className="relative flex items-center gap-4">
                             <button onClick={() => setOpenProfile(!openProfile)} className="text-primary hover:opacity-70 transition-opacity active:scale-95" data-icon="person">
                                 {avatarSrc ? (

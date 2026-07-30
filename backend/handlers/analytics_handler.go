@@ -84,7 +84,10 @@ func GetDashboardAnalytics(c *gin.Context) {
 			p.name as product_name,
 			COALESCE(c.name, 'Uncategorized') as category,
 			p.price,
-			p.stock,
+			COALESCE((
+				SELECT SUM(pv2.stock) FROM product_variants pv2
+				WHERE pv2.product_id = p.id AND pv2.deleted_at IS NULL
+			), 0) as stock,
 			COALESCE(SUM(oi.quantity), 0) as units_sold,
 			COALESCE(SUM(oi.subtotal), 0) as total_revenue,
 			COALESCE((
@@ -96,7 +99,7 @@ func GetDashboardAnalytics(c *gin.Context) {
 		LEFT JOIN categories c ON p.category_id = c.id AND c.deleted_at IS NULL
 		JOIN order_items oi ON p.id = oi.product_id
 		WHERE p.deleted_at IS NULL
-		GROUP BY p.id, p.name, c.name, p.price, p.stock
+		GROUP BY p.id, p.name, c.name, p.price
 		ORDER BY units_sold DESC
 		LIMIT 10
 	`

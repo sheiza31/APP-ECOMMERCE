@@ -13,7 +13,7 @@ import (
 func GetAllCategories(c *gin.Context) {
 	var categories []models.Category
 	if tx := config.DB.Find(&categories); tx.Error != nil {
-		response.ErrorJSON(c, http.StatusBadRequest, "Categories not found", tx.Error)
+		response.NotFound(c,http.StatusBadRequest, "Categories not found", tx.Error)
 		return
 	}
 	response.SuccessJSON(c, http.StatusOK, "Categories fetched successfully", categories)
@@ -21,7 +21,10 @@ func GetAllCategories(c *gin.Context) {
 
 func GetCategoryByID(c *gin.Context) {
 	var category models.Category
-	config.DB.First(&category, c.Param("id"))
+	if tx := config.DB.First(&category, c.Param("id")); tx.Error != nil {
+		response.NotFound(c, http.StatusBadRequest, "Categories not found", tx.Error)
+		return
+	}
 	response.SuccessJSON(c, http.StatusOK, "Category fetched successfully", category)
 } 
 
@@ -73,7 +76,7 @@ func UpdateCategory(c *gin.Context) {
 func DeleteCategory(c *gin.Context) {
 	var category models.Category
 	if tx := config.DB.Delete(&category, c.Param("id")); tx.Error != nil {
-		response.ErrorJSON(c, http.StatusBadRequest, "Categories not found", tx.Error)
+		response.NotFound(c, http.StatusBadRequest, "Categories not found", tx.Error)
 		return
 	}
 	response.SuccessJSON(c, http.StatusOK, "Categories deleted successfully", category)

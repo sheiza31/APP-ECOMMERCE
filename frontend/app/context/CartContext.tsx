@@ -8,6 +8,7 @@ export interface CartItem {
     image: string;
     quantity: number;
     color?: string;
+    stock?: number;
 }
 
 interface CartContextType {
@@ -34,14 +35,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (res.ok) {
                 const json = await res.json();
                 if (json.data && json.data.CartItems) {
-                    const formattedCart = json.data.CartItems.map((item: any) => ({
-                        id: item.product_id, // we use product_id as the cart item id for frontend uniqueness
-                        name: item.Product?.name || "Product",
-                        price: item.price,
-                        image: item.Product?.ProductsVariants?.find((v: any) => v.image)?.image || "",
-                        quantity: item.quantity,
-                        color: item.Product?.ProductsVariants?.[0]?.color || ""
-                    }));
+                    const formattedCart = json.data.CartItems.map((item: any) => {
+                        const totalStock = item.Product?.ProductsVariants?.reduce((acc: number, v: any) => acc + (v.stock ?? 0), 0) ?? 0;
+                        return {
+                            id: item.product_id, // we use product_id as the cart item id for frontend uniqueness
+                            name: item.Product?.name || "Product",
+                            price: item.price,
+                            image: item.Product?.ProductsVariants?.find((v: any) => v.image)?.image || "",
+                            quantity: item.quantity,
+                            color: item.Product?.ProductsVariants?.[0]?.color || "",
+                            stock: totalStock
+                        };
+                    });
                     setCart(formattedCart);
                 } else {
                     setCart([]);

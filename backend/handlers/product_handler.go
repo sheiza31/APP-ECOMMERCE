@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/gosimple/slug"
 	"github.com/sheiza31/app-ecommerce/backend/config"
@@ -17,16 +16,16 @@ import (
 func GetAllProducts(c *gin.Context) {
 	var products []models.Product
 
-	color      := c.Query("color")
-	categoryID := c.Query("category_id")
-	sortParam  := c.Query("sort")
-	// searchKeyword := c.Query("search")
-
-	// if searchKeyword != "" {
-	// 	query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(searchKeyword)+"%")
-	// }
+	color         := c.Query("color")
+	categoryID    := c.Query("category_id")
+	sortParam     := c.Query("sort")
+	searchKeyword := c.Query("search")
 
 	query := config.DB.Preload("ProductsVariants")
+
+	if searchKeyword != "" {
+		query = query.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(searchKeyword)+"%")
+	}
 
 	if categoryID != "" {
 		query = query.Where("category_id = ?", categoryID)

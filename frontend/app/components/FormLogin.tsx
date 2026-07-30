@@ -50,9 +50,9 @@ const FormLogin = () => {
             document.cookie = `role=${userRole}; path=/; max-age=${maxAge}; SameSite=Lax`;
 
             if (userRole === "admin") {
-                router.push("/dashboard")
+                window.location.href = "/dashboard";
             } else if (userRole === "user") {
-                router.push("/shop")
+                window.location.href = "/shop";
             }
         } else {
             setError(json.message || "Email atau kata sandi salah");

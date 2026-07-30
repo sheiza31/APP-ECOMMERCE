@@ -19,7 +19,6 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     const [selectedColors, setSelectedColors] = useState<string[]>([])
     const [selectedCategoryIDs, setSelectedCategoryIDs] = useState<number[]>([])
     const [sortOrder, setSortOrder] = useState<SortOrder>("default")
-
     const toggleColor = (color: string) => {
         setSelectedColors(prev =>
             prev.includes(color) ? prev.filter(c => c !== color) : [...prev, color]
