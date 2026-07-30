@@ -47,7 +47,6 @@ const Header = () => {
         setLocalInput(keyword)
     }, [searchParams])
 
-    // Debounced live search — waits 500ms after user stops typing
     useEffect(() => {
         if (debounceRef.current) clearTimeout(debounceRef.current)
         debounceRef.current = setTimeout(() => {
@@ -62,7 +61,6 @@ const Header = () => {
         return () => {
             if (debounceRef.current) clearTimeout(debounceRef.current)
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [localInput])
 
     const handleClearSearch = () => {
